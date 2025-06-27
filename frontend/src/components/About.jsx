@@ -1,112 +1,162 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
-import { FiCode, FiDatabase, FiServer, FiLayers } from 'react-icons/fi';
+import { Download } from 'lucide-react';
+import { FiCode, FiType, FiServer, FiDatabase, FiLayers } from 'react-icons/fi';
 
-const skills = [
-  { name: 'Frontend', icon: <FiCode />, items: ['React', 'JavaScript', 'HTML/CSS', 'Tailwind CSS'] },
-  { name: 'Backend', icon: <FiServer />, items: ['Node.js', 'Express', 'REST APIs'] },
-  { name: 'Database', icon: <FiDatabase />, items: ['MongoDB', 'Mongoose'] },
-  { name: 'Tools', icon: <FiLayers />, items: ['Git', 'VS Code', 'Postman', 'Figma'] },
+const progressSkills = [
+    { name: 'HTML', percent: 70 },
+    { name: 'CSS', percent: 70 },
+    { name: 'JavaScript', percent: 80 },
+    { name: 'Angular', percent: 80 },
+];
+
+const skillCategories = [
+    // {
+    //     name: 'Languages',
+    //     icon: <FiCode />,
+    //     items: [
+    //         { skill: 'Javascript', percent: 50 },
+    //         { skill: 'Python', percent: 70 },
+    //         { skill: 'C', percent: 70 },
+    //     ],
+    // },
+    {
+        name: 'Frontend',
+        icon: <FiCode />,
+        items: [
+            { skill: 'React', percent: 80 },
+            { skill: 'JavaScript', percent: 80 },
+            { skill: 'HTML/CSS', percent: 70 },
+            { skill: 'Tailwind CSS', percent: 75 },
+        ],
+    },
+    {
+        name: 'Backend',
+        icon: <FiServer />,
+        items: [
+            { skill: 'Node.js', percent: 75 },
+            { skill: 'Express', percent: 70 },
+            { skill: 'REST APIs', percent: 80 },
+        ],
+    },
+    {
+        name: 'Database',
+        icon: <FiDatabase />,
+        items: [
+            { skill: 'MongoDB', percent: 80 },
+            { skill: 'Mongoose', percent: 75 },
+        ],
+    },
+    {
+        name: 'Tools',
+        icon: <FiLayers />,
+        items: [
+            { skill: 'Git', percent: 85 },
+            { skill: 'VS Code', percent: 90 },
+            { skill: 'Postman', percent: 80 },
+        ],
+    },
 ];
 
 const About = () => {
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
+    return (
+        <section id="about" className="py-20 px-4 bg-[#ffffff] dark:bg-[#13072E] text-black dark:text-white relative">
+            <div className="container-custom max-w-6xl mx-auto grid md:grid-cols-2 items-center gap-12">
+                {/* Image */}
+                <motion.div
+                    initial={{ opacity: 0, x: -30 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.8 }}
+                    className="flex justify-center md:justify-end"
+                >
+                    <img
+                        src="/myimage.png"
+                        alt="Indadul Hoque"
+                        className="w-80 h-auto rounded-xl shadow-lg object-cover"
+                    />
+                </motion.div>
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-      },
-    },
-  };
+                {/* Content */}
+                <motion.div
+                    initial={{ opacity: 0, x: 30 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.8 }}
+                >
+                    <h2 className="text-4xl font-bold mb-2">About Me</h2>
+                    <p className="dark:text-purple-300 mb-6">My introduction</p>
+                    <p className="dark:text-gray-300 leading-relaxed mb-6">
+                        Full-Stack Developer, with extensive knowledge and year of experience,
+                        working in latest web technologies, UI/UX design, delivering quality work.
+                    </p>
 
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: { duration: 0.5 },
-    },
-  };
+                    {/* Stats */}
+                    <div className="flex gap-8 mb-8">
+                        <div className="text-center">
+                            <h3 className="text-2xl font-bold dark:text-white">06+</h3>
+                            <p className="text-sm dark:text-gray-400">Month experience</p>
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-2xl font-bold dark:text-white">04+</h3>
+                            <p className="text-sm dark:text-gray-400">Completed project</p>
+                        </div>
+                        <div className="text-center">
+                            <h3 className="text-2xl font-bold dark:text-white">01+</h3>
+                            <p className="text-sm dark:text-gray-400">Companies worked</p>
+                        </div>
+                    </div>
 
-  return (
-    <section id="about" ref={ref} className="section-padding py-20 bg-gray-50 dark:bg-gray-800">
-      <div className="container-custom">
-        <motion.div
-          className="text-center mb-12"
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h2 className="section-title text-gray-900 dark:text-white">About Me</h2>
-          <div className="w-20 h-1 bg-primary-500 mx-auto rounded-full mb-6"></div>
-          <p className="max-w-2xl mx-auto text-gray-600 dark:text-gray-300">
-            I'm a MERN stack developer with a passion for creating innovative and user-friendly web applications.
-            My experience includes internships where I've built full-stack applications using modern technologies.
-          </p>
-        </motion.div>
-
-        <motion.div
-          className="mt-16 bg-white dark:bg-gray-900 p-8 rounded-xl shadow-md"
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-        >
-          <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">My Approach</h3>
-          <p className="text-gray-600 dark:text-gray-300 mb-4">
-            I focus on creating clean, efficient, and scalable code that delivers exceptional user experiences. My goal is to build applications that are not only functionally robust but also visually appealing and intuitive to use.
-          </p>
-          <p className="text-gray-600 dark:text-gray-300">
-            I'm constantly learning and exploring new technologies to stay updated with the latest trends in web development. I enjoy solving complex problems and turning ideas into reality through code.
-          </p>
-        </motion.div>
-
-        <motion.section
-          variants={containerVariants}
-          initial="hidden"
-          animate={inView ? "visible" : "hidden"}
-          className="mt-12"
-        >
-          <h2 className="section-title text-3xl font-bold text-center text-gray-900 dark:text-white mb-8">
-            My Skills
-          </h2>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {skills.map((skill, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                className="card p-6 flex flex-col items-center shadow-md rounded-md bg-white dark:bg-gray-900"
-              >
-                <div className="w-14 h-14 flex items-center justify-center text-2xl bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 rounded-full mb-4">
-                  {skill.icon}
-                </div>
-                <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white">
-                  {skill.name}
-                </h3>
-                <ul className="text-center">
-                  {skill.items.map((item, i) => (
-                    <li key={i} className="text-gray-600 dark:text-gray-300 py-1">
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
-
-
-
-      </div>
-    </section>
-  );
+                    <a
+                        href="/Indadul_Hoque.pdf"
+                        download
+                        className="inline-flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-all"
+                    >
+                        Download CV <Download className="ml-2" size={18} />
+                    </a>
+                </motion.div>
+            </div>
+            {/* Skills Progress Section */}
+            <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="mt-20 max-w-3xl mx-auto px-4"
+            >
+                <h2 className="text-3xl font-bold text-center mb-12">My Skills</h2>
+            </motion.div>
+            {/* Skill Category Cards */}
+            <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8 }}
+                className="mt-20 max-w-6xl mx-auto px-4 grid md:grid-cols-2 lg:grid-cols-4 gap-8"
+            >
+                {skillCategories.map((category, index) => (
+                    <div key={index} className="bg-gray-100 dark:bg-[#1C0C40] p-6 rounded-xl shadow-md">
+                        <div className="flex items-center gap-3 mb-4 text-purple-700 dark:text-purple-400 text-xl">
+                            {category.icon}
+                            <h3 className="font-semibold">{category.name}</h3>
+                        </div>
+                        <ul className="text-gray-800 dark:text-gray-300 space-y-4">
+                            {category.items.map((item, i) => (
+                                <li key={i}>
+                                    <div className="flex justify-between mb-1 text-sm">
+                                        <span>{item.skill}</span>
+                                        <span>{item.percent}%</span>
+                                    </div>
+                                    <div className="w-full h-2 bg-purple-200 dark:bg-purple-900 rounded-full">
+                                        <div
+                                            className="h-full bg-purple-600 dark:bg-purple-500 rounded-full"
+                                            style={{ width: `${item.percent}%` }}
+                                        ></div>
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ))}
+            </motion.div>
+        </section>
+    );
 };
 
 export default About;
