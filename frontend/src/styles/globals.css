@@ -211,6 +211,18 @@
   }
 }
 
+
+@keyframes moveStars {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-100px, -200px);
+  }
+}
+
+
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 10px;

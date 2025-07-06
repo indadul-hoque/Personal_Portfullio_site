@@ -13,38 +13,47 @@ function App() {
   const [activeSection, setActiveSection] = useState('hero');
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('experience');
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1000);
-    return () => clearTimeout(timer);
-  }, []);
+  const [userSwitchedTab, setUserSwitchedTab] = useState(false); 
 
   useEffect(() => {
     const handleScroll = () => {
       const sections = document.querySelectorAll('section[id]');
       let currentSection = 'hero';
 
-      sections.forEach(section => {
-        const sectionTop = section.offsetTop - 100;
-        const sectionHeight = section.offsetHeight;
-        if (
-          window.scrollY >= sectionTop &&
-          window.scrollY < sectionTop + sectionHeight
-        ) {
-          currentSection = section.id;
-        }
-      });
+      if (window.scrollY === 0) {
+        currentSection = 'hero';
+      } else {
+        sections.forEach((section) => {
+          const sectionTop = section.offsetTop - 120;
+          const sectionHeight = section.offsetHeight;
+          if (
+            window.scrollY >= sectionTop &&
+            window.scrollY < sectionTop + sectionHeight
+          ) {
+            currentSection = section.id;
+          }
+        });
+      }
 
       setActiveSection(currentSection);
 
-      // Sync activeTab with visible section
-      if (currentSection === 'experience') {
+      if (currentSection === 'experience' && !userSwitchedTab) {
         setActiveTab('experience');
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const debouncedScroll = () => {
+      clearTimeout(window.__scrollTimeout);
+      window.__scrollTimeout = setTimeout(handleScroll, 50);
+    };
+
+    window.addEventListener('scroll', debouncedScroll);
+    return () => window.removeEventListener('scroll', debouncedScroll);
+  }, [userSwitchedTab]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   if (isLoading) {
@@ -64,13 +73,15 @@ function App() {
       <Hero />
       <About />
 
-      {/* Experience & Education Toggle Section */}
       <section id="experience" className="relative py-20 bg-gray-100 dark:bg-gray-900">
-        {/* Hidden anchors to support scroll tracking */}
         <div id="experience-anchor" className="h-[1px]" />
+
         <div className="text-center mb-8">
           <button
-            onClick={() => setActiveTab('experience')}
+            onClick={() => {
+              setActiveTab('experience');
+              setUserSwitchedTab(true); 
+            }}
             className={`px-6 py-2 rounded-l-md transition-all duration-500 ease-in-out 
               ${activeTab === 'experience'
                 ? 'bg-purple-600 text-white'
@@ -80,7 +91,10 @@ function App() {
             Experience
           </button>
           <button
-            onClick={() => setActiveTab('education')}
+            onClick={() => {
+              setActiveTab('education');
+              setUserSwitchedTab(true); 
+            }}
             className={`px-6 py-2 rounded-r-md transition-all duration-300 ease-in-out 
               ${activeTab === 'education'
                 ? 'bg-purple-600 text-white'
@@ -91,7 +105,7 @@ function App() {
           </button>
         </div>
 
-        <div className="max-w-6xl mx-auto px-4 relative min-h-[400px]">
+        <div className="max-w-6xl mx-auto px-2 relative min-h-[400px]">
           <AnimatePresence mode="wait">
             {activeTab === 'experience' ? (
               <motion.div

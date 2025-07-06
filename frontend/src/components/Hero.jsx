@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Download } from "lucide-react";
 import { motion } from 'framer-motion';
-import { FiArrowUp} from 'react-icons/fi';
+import { FiArrowUp } from 'react-icons/fi';
 import { Send } from 'lucide-react';
 import Lottie from 'lottie-react';
 
@@ -37,16 +37,11 @@ const Hero = () => {
 
     return (
         <section id="hero" className="relative min-h-screen flex items-center overflow-hidden md:p-3">
-            {/* ✅ Lottie Background */}
-            {animationData && (
-                <Lottie
-                    animationData={animationData}
-                    loop
-                    autoplay
-                    className="absolute inset-0 z-0 w-full h-full max-w-none object-cover pointer-events-none scale-125 md:scale-100"
-                />
-            )}
-
+            <div className="stars-container absolute inset-0 -z-10 overflow-hidden">
+                <div className="stars"></div>
+                <div className="stars2"></div>
+                <div className="stars3"></div>
+            </div>
             <div className="container-custom relative z-10 ">
                 <div className="grid md:grid-cols-2 gap-8 items-center">
                     <motion.div
@@ -56,7 +51,7 @@ const Hero = () => {
                         className='sm:mt-4'
                     >
                         <span className="inline-block py-1 px-3 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 text-sm font-medium mb-4">
-                            MERN Stack Developer
+                            Full-Stack Developer
                         </span>
                         <h1 className="text-3xl sm:text-4xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
                             Hello, I'm <br />
@@ -70,7 +65,7 @@ const Hero = () => {
                         <div className="flex flex-wrap gap-4">
                             <a href="#contact" className="btn btn-primary flex items-center gap-2">
                                 Contact Me
-                                  <Send size={18} className="text-white" /> 
+                                <Send size={18} className="text-white" />
                             </a>
                             <a
                                 href="/Indadul_Hoque.pdf"
