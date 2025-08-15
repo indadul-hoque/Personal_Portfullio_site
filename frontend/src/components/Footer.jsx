@@ -72,7 +72,7 @@ const Footer = () => {
           className="flex flex-col md:flex-row justify-between items-center"
         >
           <p className="text-gray-400 text-sm mb-4 md:mb-0">
-            &copy; {currentYear} Your Name. All rights reserved.
+            &copy; {currentYear} Indadul Hoque. All rights reserved.
           </p>
           <p className="text-gray-400 text-sm flex items-center">
             Made with <FiHeart className="text-red-500 mx-1" /> using React

@@ -6,18 +6,18 @@ import { FiExternalLink, FiCode, FiX } from 'react-icons/fi';
 
 const projects = [
   {
-    id: 1,
-    title: 'Restaurant Web App',
-    description: 'A full-stack restaurant web application with menu management, online ordering, and reservation system.',
-    image: 'https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    technologies: ['React', 'Node.js', 'Express', 'MongoDB', 'Tailwind CSS'],
+    id: 3,
+    title: 'OCR-Based E-commerce Site',
+    description: 'An innovative e-commerce platform with OCR technology for product search and information extraction.',
+    image: './listkaroHomePage.png',
+    technologies: ['React', 'Node.js', 'Express', 'MongoDB', 'Microsoft Azure OCR Service'],
     features: [
-      'Interactive menu with filtering options',
-      'Online ordering system with real-time updates',
-      'Table reservation functionality',
-      'Admin dashboard for menu and order management'
+      'OCR-powered product search from images',
+      'Full e-commerce functionality with cart and checkout',
+      'User authentication and profile management',
+      'Order tracking and history'
     ],
-    demoLink: '#',
+    demoLink: 'https://list-karo.vercel.app/',
     codeLink: '#'
   },
   {
@@ -32,24 +32,26 @@ const projects = [
       'Event calendar and announcements',
       'Parent-teacher communication system'
     ],
-    demoLink: '#',
-    codeLink: '#'
+    demoLink: 'https://franchaisemodelformathguruabacus.vercel.app/',
+    codeLink: 'https://github.com/Hoqueindadul/franchaisemodelformathguruabacus'
   },
   {
-    id: 3,
-    title: 'OCR-Based E-commerce Site',
-    description: 'An innovative e-commerce platform with OCR technology for product search and information extraction.',
-    image: 'https://images.pexels.com/photos/230544/pexels-photo-230544.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    technologies: ['React', 'Node.js', 'Express', 'MongoDB', 'Tesseract.js'],
+    id: 1,
+    title: 'Restaurant Web App',
+    description: 'A full-stack restaurant web application with menu management, online ordering, and reservation system.',
+    image: 'https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
+    technologies: ['React', 'Node.js', 'Express', 'MongoDB', 'Bootstrap'],
     features: [
-      'OCR-powered product search from images',
-      'Full e-commerce functionality with cart and checkout',
-      'User authentication and profile management',
-      'Order tracking and history'
+      'Interactive menu with filtering options',
+      'Online ordering system with real-time updates',
+      'Table reservation functionality',
+      'Admin dashboard for menu and order management'
     ],
-    demoLink: '#',
+    demoLink: 'https://restaurent-web-app-with-team.vercel.app/',
     codeLink: '#'
-  }
+  },
+  
+  
 ];
 
 const Projects = () => {

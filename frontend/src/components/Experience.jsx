@@ -5,6 +5,12 @@ import React from 'react';
 
 const experiences = [
   {
+    title: 'Junior Full Stack Developer',
+    company: 'GS3 Solution PVT.LTD',
+    duration: '',
+    date: 'Jul 2025 - Present'
+  },
+  {
     title: 'MERN Stack Intern',
     company: 'Ardent Computech PVT.LTD.',
     duration: '3 months',

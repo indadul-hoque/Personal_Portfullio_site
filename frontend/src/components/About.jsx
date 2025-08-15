@@ -61,13 +61,14 @@ const skillCategories = [
 const About = () => {
     return (
         <section id="about" className="py-20 px-4 bg-[#ffffff] dark:bg-[#13072E] text-black dark:text-white relative">
-            <div className="container-custom max-w-6xl mx-auto grid md:grid-cols-2 items-center gap-12">
+            <div className="container-custom max-w-6xl mx-auto justify-center grid md:grid-cols-2 items-center [gap:13rem]">
+
                 {/* Image */}
                 <motion.div
                     initial={{ opacity: 0, x: -30 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.8 }}
-                    className="flex justify-center md:justify-end"
+                    className="flex item-center justify-center md:justify-end"
                 >
                     <img
                         src="/myimage.png"
@@ -96,11 +97,11 @@ const About = () => {
                             <p className="text-sm dark:text-gray-400">Month experience</p>
                         </div>
                         <div className="text-center">
-                            <h3 className="text-2xl font-bold dark:text-white">04+</h3>
+                            <h3 className="text-2xl font-bold dark:text-white">04</h3>
                             <p className="text-sm dark:text-gray-400">Completed project</p>
                         </div>
                         <div className="text-center">
-                            <h3 className="text-2xl font-bold dark:text-white">01+</h3>
+                            <h3 className="text-2xl font-bold dark:text-white">01</h3>
                             <p className="text-sm dark:text-gray-400">Companies worked</p>
                         </div>
                     </div>
