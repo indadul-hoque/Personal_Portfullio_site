@@ -1,189 +1,162 @@
-import React, { useEffect, useState, useRef } from "react";
-import { Download, Send } from "lucide-react";
-import { motion, useAnimation } from "framer-motion";
-import { FiArrowUp } from "react-icons/fi";
-
-const NUM_CIRCLES = 50;
-
-const generateCircles = () =>
-  Array.from({ length: NUM_CIRCLES }).map(() => ({
-    id: crypto.randomUUID(),
-    x: Math.random() * window.innerWidth,
-    y: Math.random() * window.innerHeight,
-    size: Math.random() * 6 + 4,
-    color: ["#36C5F0", "#ECB22E", "#E01E5B", "#2EB67D"][
-      Math.floor(Math.random() * 4)
-    ],
-    dx: Math.random() * 1 - 0.5,
-    dy: Math.random() * 1 - 0.5,
-  }));
+import React from "react";
+import { Eye } from "lucide-react";
+import { motion } from "framer-motion";
+import Projects from "./Projects";
 
 const Hero = () => {
-  const [circles, setCircles] = useState(generateCircles);
-  const [isVisible, setIsVisible] = useState(false);
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCircles((prev) =>
-        prev.map((circle) => {
-          let newX = circle.x + circle.dx * 2;
-          let newY = circle.y + circle.dy * 2;
-
-          if (newX < 0 || newX > window.innerWidth) circle.dx *= -1;
-          if (newY < 0 || newY > window.innerHeight) circle.dy *= -1;
-
-          return {
-            ...circle,
-            x: newX,
-            y: newY,
-          };
-        })
-      );
-    }, 30); // movement speed
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const toggleVisibility = () => {
-      setIsVisible(window.scrollY > 200);
-    };
-    window.addEventListener("scroll", toggleVisibility);
-    return () => window.removeEventListener("scroll", toggleVisibility);
-  }, []);
-
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   return (
-    <section
-      id="hero"
-      ref={containerRef}
-      className="relative min-h-screen flex items-center overflow-hidden md:p-3 bg-white dark:bg-gray-900"
-    >
-      {/* Background: Circles + Lines */}
-      <svg className="absolute inset-0 w-full h-full z-0 pointer-events-none">
-        {/* Lines between close circles */}
-        {circles.map((a, i) =>
-          circles.map((b, j) => {
-            if (i < j) {
-              const distance = Math.hypot(a.x - b.x, a.y - b.y);
-              if (distance < 150) {
-                return (
-                  <line
-                    key={`${a.id}-${b.id}`}
-                    x1={a.x}
-                    y1={a.y}
-                    x2={b.x}
-                    y2={b.y}
-                    stroke="gray"
-                    strokeOpacity={0.2}
-                    strokeWidth="1"
-                  />
-                );
-              }
-            }
-            return null;
-          })
-        )}
-      </svg>
+    <div className="space-y-6">
+      {/* ROW 1: About Panel & Skills Panel Grid Arrangement */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-6">
+        {/* Card A: About Me (Spans 2 columns on large displays) */}
+        <motion.section
+          id="hero"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="lg:col-span-2 border-2 border-gray-800/60 bg-[#0D1321]/40 backdrop-blur-sm rounded-2xl p-6 md:p-8 relative overflow-hidden flex flex-col justify-between gap-6"
+        >
+          <div className="absolute top-0 left-1/4 w-96 h-40 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
-      {circles.map((circle) => (
-        <motion.div
-          key={circle.id}
-          style={{
-            width: circle.size,
-            height: circle.size,
-            borderRadius: "9999px",
-            backgroundColor: circle.color,
-            position: "absolute",
-            top: circle.y,
-            left: circle.x,
-            opacity: 0.8,
-            zIndex: 1,
-          }}
-          animate={{ x: 0, y: 0 }}
-          transition={{ duration: 0.1 }}
-        />
-      ))}
-
-      {/* Main Content */}
-      <div className="container-custom relative z-10">
-        <div className="grid md:grid-cols-2 gap-8 items-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="sm:mt-4"
-          >
-            <span className="inline-block py-1 px-3 rounded-full bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 text-sm font-medium mb-4">
-              Full-Stack Developer
-            </span>
-            <h1 className="text-3xl sm:text-4xl md:text-4xl font-bold mb-4 text-gray-900 dark:text-white">
-              Hello, I'm <br />
-              <span className="text-primary-500">Indadul Hoque</span>
-            </h1>
-            <p className="text-lg text-gray-700 dark:text-gray-300 mb-8">
-              A passionate MERN stack developer creating innovative web solutions.
-              I specialize in building responsive and user-friendly <b>Fullstack</b> web applications.
-            </p>
-            <div className="flex flex-wrap gap-4">
-              <a href="#contact" className="btn btn-primary flex items-center gap-2">
-                Contact Me
-                <Send size={18} className="text-white" />
-              </a>
-              <a
-                href="/Indadul_Hoque.pdf"
-                download
-                className="btn btn-secondary flex items-center gap-2"
-              >
-                <span>Download My CV</span>
-                <Download size={18} />
-              </a>
+          <div className="flex flex-col sm:flex-row gap-6 items-center flex-1">
+            {/* Profile Bio */}
+            <div className="flex-1 order-2 sm:order-1">
+              <h1 className="text-xl font-bold text-[#d8d8e0] mb-3 tracking-tight flex items-center gap-2">
+                <span className="w-1.5 h-4 rounded-sm bg-purple-500"></span>
+                About me
+              </h1>
+              <p className="text-sm md:text-base leading-relaxed text-gray-400">
+                I'm a passionate MERN stack developer dedicated to creating
+                innovative, clean, and scalable web solutions. I specialize in
+                engineering highly responsive, user-friendly full-stack web
+                applications built with structural integrity and reliable
+                performance.
+              </p>
             </div>
-          </motion.div>
 
-          <motion.div
-            className="hidden md:block p-6"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 0.9 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-            <div className="relative">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-primary-500 to-accent-500 rounded-full blur opacity-30 animate-pulse"></div>
-              <div className="w-full aspect-square bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden relative border-4 border-white dark:border-gray-800 mt-5">
+            {/* Profile Image Asset */}
+            <div className="flex-shrink-0 order-1 sm:order-2">
+              <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl overflow-hidden border border-gray-800 bg-[#0F1626] p-1.5 shadow-inner">
                 <img
                   src="/myimage.png"
-                  alt="Profile portrait"
-                  className="w-full h-full object-cover"
+                  alt="Indadul Hoque portrait"
+                  className="w-full h-full object-cover rounded-xl bg-gray-900 filter grayscale contrast-125 brightness-90 hover:grayscale-0 transition-all duration-500"
                 />
               </div>
             </div>
-          </motion.div>
-        </div>
+          </div>
+
+          {/* CV Button Tray */}
+          <div className="pt-4 border-t border-gray-800/40 flex items-center">
+            <a
+              href="/Indadul_Hoque.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800/60 text-gray-300 border border-gray-700/40 hover:text-orange-400 hover:bg-orange-950/20 font-medium text-xs transition-all duration-200"
+            >
+              <span>Preview & Download CV</span>
+              <Eye
+                size={14}
+                className="transition-transform group-hover:scale-105"
+              />
+            </a>
+          </div>
+        </motion.section>
+
+        {/* Card B: Core Skills Module Grid Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+          className="border-2 border-gray-800/60 bg-[#0D1321]/30 backdrop-blur-sm rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between gap-4"
+        >
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f293708_1px,transparent_1px),linear-gradient(to_bottom,#1f293708_1px,transparent_1px)] bg-[size:3rem_3rem] pointer-events-none"></div>
+
+          <div>
+            <h2 className="text-sm font-bold text-[#d8d8e0] uppercase tracking-wider flex items-center gap-2">
+              <span className="w-1 h-3 rounded-sm bg-purple-500"></span>
+              Core Stack
+            </h2>
+            <p className="text-[11px] text-gray-500 font-mono mt-0.5">
+              TECHNOLOGIES & TOOLS
+            </p>
+          </div>
+
+          {/* Tight Layout Cluster Badges */}
+          <div className="flex flex-wrap gap-2 relative z-10 flex-1 content-start mt-2">
+            {[
+              {
+                name: "JavaScript",
+                styles:
+                  "hover:text-yellow-400 hover:border-yellow-500/30 hover:bg-yellow-950/20",
+              },
+              {
+                name: "TypeScript",
+                styles:
+                  "hover:text-blue-400 hover:border-blue-500/30 hover:bg-blue-950/30",
+              },
+              {
+                name: "ReactJS",
+                styles:
+                  "hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-950/30",
+              },
+              {
+                name: "Node.js",
+                styles:
+                  "hover:text-emerald-400 hover:border-emerald-500/30 hover:bg-emerald-950/30",
+              },
+              {
+                name: "Express.js",
+                styles:
+                  "hover:text-amber-400 hover:border-amber-500/30 hover:bg-amber-950/30",
+              },
+              {
+                name: "MongoDB",
+                styles:
+                  "hover:text-green-400 hover:border-green-500/30 hover:bg-green-950/30",
+              },
+              {
+                name: "Next.js",
+                styles:
+                  "hover:text-white hover:border-gray-500/30 hover:bg-gray-800/40",
+              },
+              {
+                name: "TailwindCSS",
+                styles:
+                  "hover:text-sky-400 hover:border-sky-500/30 hover:bg-sky-950/30",
+              },
+              {
+                name: "RESTful APIs",
+                styles:
+                  "hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-950/20",
+              },
+              {
+                name: "CI/CD",
+                styles:
+                  "hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-950/20",
+              },
+              {
+                name: "Git",
+                styles:
+                  "hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-950/20",
+              },
+            ].map((skill) => (
+              <span
+                key={skill.name}
+                className={`px-2.5 py-1 text-xs font-mono font-medium text-gray-400 bg-gray-900/60 border border-gray-800/80 rounded-xl transition-all duration-300 cursor-default select-none shadow-sm ${skill.styles}`}
+              >
+                {skill.name}
+              </span>
+            ))}
+          </div>
+        </motion.div>
       </div>
 
-      {/* Scroll to Top Button */}
-      {isVisible && (
-        <motion.button
-          onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-50 p-3 rounded-md bg-purple-700 hover:bg-purple-800 text-white shadow-md transition-all duration-300"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          whileHover={{ scale: 1.1 }}
-          transition={{ type: "spring", stiffness: 300 }}
-        >
-          <motion.div
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <FiArrowUp size={20} />
-          </motion.div>
-        </motion.button>
-      )}
-    </section>
+      {/* ROW 2: Independent Sub-Grid Project Architecture */}
+      <div>
+        <Projects limit={3} />
+      </div>
+    </div>
   );
 };
 

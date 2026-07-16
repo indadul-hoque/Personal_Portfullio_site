@@ -1,153 +1,184 @@
-import React from 'react';
-import { useState, useEffect } from 'react';
-import { useTheme } from '../context/ThemeContext';
-import { motion } from 'framer-motion';
-import { FiSun, FiMoon, FiMenu, FiX } from 'react-icons/fi';
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { FiGithub, FiLinkedin, FiLayers, FiBookOpen } from "react-icons/fi";
+import { Menu, X } from "lucide-react"; // Hamburger and Close icons
 
-const navLinks = [
-    { name: 'Home', path: '#hero' },
-    { name: 'About', path: '#about' },
-    { name: 'Experience', path: '#experience' },
-    { name: 'Projects', path: '#projects' },    
-    { name: 'Contact', path: '#contact' },
-];
+export default function Navbar() {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isOpen, setIsOpen] = useState(false); // Controls the hamburger dropdown
+  const navigate = useNavigate();
+  const location = useLocation();
 
-const Navbar = ({ activeSection }) => {
-    const { isDarkMode, toggleTheme } = useTheme();
-    const [isScrolled, setIsScrolled] = useState(false);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 10);
-        };
-
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
-
-    const toggleMobileMenu = () => {
-        setIsMobileMenuOpen(!isMobileMenuOpen);
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
     };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-    return (
-        <header
-            className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-                ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-md'
-                : 'bg-transparent'
-                }`}
+  // Collapse the mobile menu instantly if the user shifts pages
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname]);
+
+  const handleNavClick = (e, id, targetRoute) => {
+    setIsOpen(false); // Close menu layout on link selection
+
+    if (targetRoute) {
+      return;
+    }
+
+    e.preventDefault();
+    if (location.pathname !== "/") {
+      navigate(`/#${id}`);
+      return;
+    }
+
+    const element = document.getElementById(id);
+    if (element) {
+      const offset = 120;
+      const bodyRect = document.body.getBoundingClientRect().top;
+      const elementRect = element.getBoundingClientRect().top;
+      const elementPosition = elementRect - bodyRect;
+      const offsetPosition = elementPosition - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth",
+      });
+    }
+  };
+
+  return (
+    <div
+      className={`static w-full border-2 border-gray-800/60 rounded-2xl p-4 flex flex-col transition-all duration-300 z-40 ${
+        isScrolled
+          ? "bg-[#0D1321]/90 shadow-xl shadow-black/40"
+          : "bg-[#0D1321]/40 backdrop-blur-md"
+      }`}
+    >
+      {/* Top Main Bar Container */}
+      <div className="w-full flex items-center justify-between">
+        {/* Left Column: Brand / Logo */}
+        <div className="flex items-center gap-3">
+          <Link
+            to="/"
+            className="relative w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-gray-300 border border-gray-800/60 hover:opacity-90 transition-opacity select-none group"
+          >
+            <img
+              src="../../public/myLogo.png" // Replace with your actual logo image path
+              alt="Indadul Hoque Logo"
+              className="w-full h-full object-cover"
+              loading="eager"
+            />
+          </Link>
+          <span className="text-xl font-bold text-[#d8d8e0] tracking-tight">
+            Indadul Hoque
+          </span>
+        </div>
+
+        {/* Desktop Navigation Links (Hidden on Mobile/Tablet viewports) */}
+        <div className="hidden md:flex items-center p-1 bg-gray-950/40 border border-gray-800/80 rounded-xl">
+          <Link
+            to="/"
+            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-mono font-medium text-gray-400 hover:text-white rounded-lg transition-colors duration-200"
+          >
+            <FiLayers size={13} className="text-gray-500" />
+            <span>Home</span>
+          </Link>
+
+          <Link
+            to="/projects"
+            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-mono font-medium text-gray-400 hover:text-white rounded-lg transition-colors duration-200"
+          >
+            <FiBookOpen size={13} className="text-gray-500" />
+            <span>Projects</span>
+          </Link>
+        </div>
+
+        {/* Desktop Social Profile Actions (Hidden on Mobile/Tablet viewports) */}
+        <div className="hidden md:flex items-center gap-2.5">
+          <a
+            href="https://github.com/Hoqueindadul"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 rounded-xl bg-gray-900/60 border border-gray-800/80 text-gray-400 hover:text-white hover:border-gray-700 transition-all duration-300"
+            aria-label="GitHub Profile"
+          >
+            <FiGithub size={15} />
+          </a>
+          <a
+            href="https://linkedin.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 rounded-xl bg-gray-900/60 border border-gray-800/80 text-gray-400 hover:text-white hover:border-gray-700 transition-all duration-300"
+            aria-label="LinkedIn Profile"
+          >
+            <FiLinkedin size={15} />
+          </a>
+        </div>
+
+        {/* Hamburger Menu Toggle Button (Visible ONLY on Mobile & Tablets) */}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="md:hidden p-2 rounded-xl bg-gray-950/40 border border-gray-800/80 text-gray-400 hover:text-white transition-all duration-200"
+          aria-label="Toggle navigation links"
         >
-            <div className="container-custom">
-                <nav className="flex items-center justify-between py-4">
-                    <motion.a
-                        href="#hero"
-                        className="text-2xl font-bold text-primary-600 dark:text-primary-400 group"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5 }}
-                    >
-                        <motion.h4
-                            className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-pink-500 font-bold text-2xl"
-                            initial={{ scale: 1, filter: "drop-shadow(0px 0px 0px rgba(0,0,0,0))" }}
-                            whileHover={{
-                                scale: 1.05,
-                                filter: "drop-shadow(0px 0px 8px rgba(0, 255, 255, 0.7)) drop-shadow(0px 0px 16px rgba(255, 0, 255, 0.4))",
-                            }}
-                            transition={{ duration: 0.4, ease: "easeInOut" }}
-                        >
-                            {"{ Indadul.H }"}
-                        </motion.h4>
-                    </motion.a>
+          {isOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
+      </div>
 
-                    {/* Desktop Navigation */}
-                    <motion.ul
-                        className="hidden md:flex items-center space-x-8"
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.1 }}
-                    >
-                        {navLinks.map((link) => (
-                            <li key={link.name}>
-                                <a
-                                    href={link.path}
-                                    className={`text-sm font-medium hover:text-primary-500 transition-colors relative ${
-                                        activeSection === link.path.replace('#', '') ||
-                                        (link.path === '#experience' && activeSection === 'education')
-                                            ? 'text-primary-500'
-                                            : 'text-gray-700 dark:text-gray-300'
-                                        }`}
-                                >
-                                    {link.name}
-                                    {(activeSection === link.path.replace('#', '') ||
-                                      (link.path === '#experience' && activeSection === 'education')) && (
-                                        <motion.span
-                                            className="absolute -bottom-1 left-0 w-full h-0.5 bg-primary-500"
-                                            layoutId="navIndicator"
-                                        />
-                                    )}
-                                </a>
-                            </li>
-                        ))}
-                    </motion.ul>
+      {/* Expandable Hamburger Mobile Drawer Overlay */}
+      <div
+        className={`w-full overflow-hidden transition-all duration-300 ease-in-out md:hidden flex flex-col items-center gap-4 ${
+          isOpen
+            ? "max-h-[250px] mt-4 pt-4 border-t border-gray-800/40"
+            : "max-h-0"
+        }`}
+      >
+        {/* Mobile Navigation Links */}
+        <div className="flex flex-col w-full gap-2">
+          <Link
+            to="/projects"
+            onClick={(e) => handleNavClick(e, "projects", true)}
+            className="flex items-center justify-center gap-2 w-full py-2.5 text-xs font-mono font-medium text-gray-400 hover:text-white bg-gray-950/30 border border-gray-800/40 rounded-xl transition-colors"
+          >
+            <FiLayers size={14} className="text-gray-500" />
+            <span>Projects</span>
+          </Link>
 
-                    <div className="flex items-center space-x-4">
-                        <motion.button
-                            onClick={toggleTheme}
-                            className="p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                            aria-label={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.5, delay: 0.2 }}
-                        >
-                            {isDarkMode ? <FiSun size={20} /> : <FiMoon size={20} />}
-                        </motion.button>
+          <button
+            onClick={(e) => handleNavClick(e, "education", false)}
+            className="flex items-center justify-center gap-2 w-full py-2.5 text-xs font-mono font-medium text-gray-400 hover:text-white bg-gray-950/30 border border-gray-800/40 rounded-xl transition-colors"
+          >
+            <FiBookOpen size={14} className="text-gray-500" />
+            <span>Education</span>
+          </button>
+        </div>
 
-                        {/* Mobile Menu Button */}
-                        <motion.button
-                            className="md:hidden p-2 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                            onClick={toggleMobileMenu}
-                            aria-label="Toggle mobile menu"
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
-                        >
-                            {isMobileMenuOpen ? <FiX size={20} /> : <FiMenu size={20} />}
-                        </motion.button>
-                    </div>
-                </nav>
-            </div>
-
-            {/* Mobile Menu */}
-            {isMobileMenuOpen && (
-                <motion.div
-                    className="md:hidden bg-white dark:bg-gray-900 shadow-lg"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.3 }}
-                >
-                    <ul className="py-4 px-6 space-y-4">
-                        {navLinks.map((link) => (
-                            <li key={link.name}>
-                                <a
-                                    href={link.path}
-                                    className={`block py-2 text-base font-medium hover:text-primary-500 transition-colors ${
-                                        activeSection === link.path.replace('#', '') ||
-                                        (link.path === '#experience' && activeSection === 'education')
-                                            ? 'text-primary-500'
-                                            : 'text-gray-700 dark:text-gray-300'
-                                        }`}
-                                    onClick={toggleMobileMenu}
-                                >
-                                    {link.name}
-                                </a>
-                            </li>
-                        ))}
-                    </ul>
-                </motion.div>
-            )}
-        </header>
-    );
-};
-
-export default Navbar;
+        {/* Mobile Social Link Actions Grid */}
+        <div className="flex items-center justify-center gap-4 w-full pt-2">
+          <a
+            href="https://github.com/Hoqueindadul"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2.5 rounded-xl bg-gray-900/60 border border-gray-800/80 text-gray-400 hover:text-white flex-1 flex justify-center transition-all"
+            aria-label="GitHub Profile"
+          >
+            <FiGithub size={16} />
+          </a>
+          <a
+            href="https://linkedin.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2.5 rounded-xl bg-gray-900/60 border border-gray-800/80 text-gray-400 hover:text-white flex-1 flex justify-center transition-all"
+            aria-label="LinkedIn Profile"
+          >
+            <FiLinkedin size={16} />
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}

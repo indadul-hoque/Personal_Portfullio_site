@@ -1,91 +1,100 @@
-import { motion } from 'framer-motion';
-import { useInView } from 'react-intersection-observer';
-import { FiBriefcase, FiCalendar } from 'react-icons/fi';
-import React from 'react';
+import React from "react";
+import { motion } from "framer-motion";
+import { useInView } from "react-intersection-observer";
+import { FiCalendar, FiArrowUpRight } from "react-icons/fi";
 
 const experiences = [
   {
-    title: 'Junior Full Stack Developer',
-    company: 'GS3 Solution PVT.LTD',
-    duration: '',
-    date: 'Jul 2025 - Present'
+    title: "Junior Full Stack Developer",
+    company: "GS3 Solution PVT.LTD",
+    duration: "6 mos",
+    date: "Jul 2025 - Dec 2025",
+    current: false,
   },
   {
-    title: 'MERN Stack Intern',
-    company: 'Ardent Computech PVT.LTD.',
-    duration: '3 months',
-    date: 'Feb 2025 - Apr 2025',
-    
+    title: "MERN Stack Intern",
+    company: "Ardent Computech PVT.LTD.",
+    duration: "3 mos",
+    date: "Feb 2025 - Apr 2025",
+    current: false,
   },
   {
-    title: 'MERN Stack Intern',
-    company: 'Ardent Computech PVT.LTD.',
-    duration: '1 month',
-    date: 'Jul 2024 - Aug 2024',
-    
-  }
+    title: "MERN Stack Intern",
+    company: "Ardent Computech PVT.LTD.",
+    duration: "1 mos",
+    date: "Jul 2024 - Aug 2024",
+    current: false,
+  },
 ];
 
 const Experience = () => {
-  const [ref, inView] = useInView({
-    triggerOnce: true,
-    threshold: 0.1,
-  });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.05 });
 
   return (
-    <section id="experience" ref={ref} className="pt-4 bg-white dark:bg-gray-900">
-      <div className="container-custom">
-        <motion.div
-          className="text-center mb-12"
-          initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h2 className="section-title text-gray-900 dark:text-white">My Experience</h2>
-          <div className="w-20 h-1 bg-primary-500 mx-auto rounded-full mb-6"></div>
-          <p className="max-w-2xl mx-auto text-gray-600 dark:text-gray-300">
-            My professional journey as a MERN stack developer includes valuable internship experiences 
-            where I've honed my skills in building full-stack web applications.
-          </p>
-        </motion.div>
+    <section id="experience" ref={ref} className=" bg-[#0B0F19] text-gray-300">
+      <div className="w-full max-w-5xl p-6 mx-auto border-2 border-gray-800/60 bg-[#0D1321]/40 backdrop-blur-sm rounded-2xl">
+        {/* Section Header */}
+        <div className="mb-8 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-[#d8d8e0] tracking-tight flex items-center gap-2">
+            <span className="w-1.5 h-4 rounded-sm bg-purple-500"></span>
+            Experience
+          </h2>
+          <span className="text-xs text-gray-500 font-mono">
+            HISTORY // {experiences.length} ROLES
+          </span>
+        </div>
 
-        <div className="relative">
-          <div className="absolute top-0 left-0 md:left-1/2 h-full w-0.5 bg-gray-200 dark:bg-gray-700 transform md:translate-x-px"></div>
-
-          <div className="relative z-10">
-            {experiences.map((exp, index) => (
-              <motion.div
-                key={index}
-                className="mb-12 md:mb-0"
-                initial={{ opacity: 0, y: 20 }}
-                animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-                transition={{ duration: 0.5, delay: index * 0.2 }}
-              >
-                <div className="flex flex-col md:flex-row items-start md:items-center">
-                  <div className="absolute left-0 md:left-1/2 transform -translate-x-1/2 mt-6 md:mt-0 w-4 h-4 rounded-full bg-primary-500 border-4 border-white dark:border-gray-900"></div>
-
-                  <div
-                    className={`md:w-1/2 ${
-                      index % 2 === 0 ? 'md:pr-12 md:text-right md:self-end' : 'md:pl-12 md:self-start md:ml-auto'
-                    } pl-10 md:pl-0`}
-                  >
-                    <div className={`card p-6 text-start ${index % 2 === 0 ? 'ml-auto' : 'mr-auto'}`}>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{exp.title}</h3>
-                      <h4 className="text-lg font-medium text-primary-500 mb-2">{exp.company}</h4>
-                      <div className="flex items-center text-gray-500 dark:text-gray-400 mb-4">
-                        <FiCalendar className="mr-2" />
-                        <span>{exp.date}</span>
-                        <span className="mx-2">•</span>
-                        <FiBriefcase className="mr-2" />
-                        <span>{exp.duration}</span>
-                      </div>
-                      
-                    </div>
-                  </div>
+        {/* Compact List Stack */}
+        <div className="border border-gray-800/60 bg-[#0D1321]/30 backdrop-blur-sm rounded-xl divide-y divide-gray-800/60 overflow-hidden">
+          {experiences.map((exp, index) => (
+            <motion.div
+              key={index}
+              className="p-5 md:px-6 transition-all duration-300 hover:bg-gray-800/20 group flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative"
+              initial={{ opacity: 0, y: 10 }}
+              animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 10 }}
+              transition={{ duration: 0.4, delay: index * 0.1 }}
+            >
+              {/* Left Side: Title & Company */}
+              <div className="flex items-start gap-3.5">
+                <div className="mt-1.5 hidden sm:block">
+                  {exp.current ? (
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                  ) : (
+                    <div className="h-2 w-2 rounded-full bg-gray-700 group-hover:bg-gray-500 transition-colors" />
+                  )}
                 </div>
-              </motion.div>
-            ))}
-          </div>
+                <div>
+                  <h3 className="text-base font-semibold text-white group-hover:text-purple-400 transition-colors flex items-center gap-1.5">
+                    {exp.title}
+                    <FiArrowUpRight
+                      size={14}
+                      className="opacity-0 group-hover:opacity-100 text-purple-400 transition-all transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                    />
+                  </h3>
+                  <p className="text-sm text-gray-400 font-medium">
+                    {exp.company}
+                  </p>
+                </div>
+              </div>
+
+              {/* Right Side: Dates & Badges */}
+              <div className="flex flex-wrap items-center sm:justify-end gap-3 text-xs font-mono text-gray-500">
+                <div className="flex items-center gap-1.5">
+                  <FiCalendar size={13} className="text-gray-600" />
+                  <span>{exp.date}</span>
+                </div>
+
+                {exp.duration && (
+                  <span className="px-2 py-0.5 rounded bg-gray-900/60 border border-gray-800 text-gray-400 text-[11px]">
+                    {exp.duration}
+                  </span>
+                )}
+              </div>
+            </motion.div>
+          ))}
         </div>
       </div>
     </section>
