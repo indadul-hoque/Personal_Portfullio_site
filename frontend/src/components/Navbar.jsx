@@ -67,7 +67,7 @@ export default function Navbar() {
             className="relative w-8 h-8 rounded-full overflow-hidden flex items-center justify-center bg-gray-300 border border-gray-800/60 hover:opacity-90 transition-opacity select-none group"
           >
             <img
-              src="../../public/myLogo.png" // Replace with your actual logo image path
+              src="/myLogo.png" // Replace with your actual logo image path
               alt="Indadul Hoque Logo"
               className="w-full h-full object-cover"
               loading="eager"
