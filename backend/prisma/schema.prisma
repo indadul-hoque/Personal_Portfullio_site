@@ -1,0 +1,98 @@
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// Main User
+model User {
+  id        String   @id @default(uuid())
+  username  String
+  email     String   @unique
+  password  String
+  role      String   @default("ADMIN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+// Profile Profile
+model Profile {
+  id          String @id @default(uuid())
+  displayName String
+  email       String @unique
+  phone       String @unique
+  address     String
+  bio         String
+  socialLinks Json   @db.JsonB
+  photoURL    String
+  cvURL       String
+  skills      String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Project Model
+model Projects {
+  id              String   @id @default(uuid())
+  projectTittle   String
+  projectDesc     String
+  displayImage    String
+  projectFeatures String[]
+  techStack       String[]
+  liveLink        String
+  repoLink        String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Education Model
+model Education {
+  id              String   @id @default(uuid())
+  institutionName String
+  degreeName      String
+  fieldOfStudy    String
+  startDate       DateTime
+  endDate         DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Experience Model
+model Experience {
+  id              String   @id @default(uuid())
+  companyName     String
+  jobTitle        String
+  jobDescription  String
+  startDate       DateTime
+  endDate         DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Contact Model
+model Contact {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  subject   String
+  message   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Certificate Model
+model Certificate {
+  id          String   @id @default(uuid())
+  certificateName String
+  certificateImage String
+  link        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

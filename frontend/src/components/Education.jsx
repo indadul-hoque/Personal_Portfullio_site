@@ -22,8 +22,16 @@ const educations = [
   },
 ];
 
+import { usePortfolioData } from "../context/PortfolioDataContext";
+
 const Education = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.05 });
+  const portfolioData = usePortfolioData();
+
+  const currentEducations =
+    portfolioData?.educations && portfolioData.educations.length > 0
+      ? portfolioData.educations
+      : educations;
 
   return (
     <section
@@ -39,13 +47,13 @@ const Education = () => {
             Education
           </h2>
           <span className="text-xs text-gray-500 font-mono">
-            ACADEMICS // {educations.length} RECORD
+            ACADEMICS // {currentEducations.length} RECORD
           </span>
         </div>
 
         {/* Compact List Stack */}
         <div className="border border-gray-800/60 bg-[#0D1321]/30 backdrop-blur-sm rounded-xl divide-y divide-gray-800/60 overflow-hidden">
-          {educations.map((edu, index) => (
+          {currentEducations.map((edu, index) => (
             <motion.div
               key={index}
               className="p-5 md:px-6 transition-all duration-300 hover:bg-gray-800/20 group flex flex-col justify-between gap-3 relative"
@@ -79,7 +87,7 @@ const Education = () => {
                 {/* Date Tag */}
                 <div className="flex items-center gap-1.5 text-[11px] font-mono font-medium text-purple-300 bg-purple-950/30 border border-purple-500/20 px-2.5 py-1 rounded-full sm:justify-end self-start sm:self-center backdrop-blur-sm shadow-sm select-none">
                   <FiCalendar size={12} className="text-purple-400" />
-                  <span>{edu.year}</span>
+                  <span>{edu.year || edu.date}</span>
                 </div>
               </div>
 

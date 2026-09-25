@@ -27,8 +27,16 @@ const experiences = [
   },
 ];
 
+import { usePortfolioData } from "../context/PortfolioDataContext";
+
 const Experience = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.05 });
+  const portfolioData = usePortfolioData();
+
+  const currentExperiences =
+    portfolioData?.experiences && portfolioData.experiences.length > 0
+      ? portfolioData.experiences
+      : experiences;
 
   return (
     <section id="experience" ref={ref} className=" bg-[#0B0F19] text-gray-300">
@@ -40,13 +48,13 @@ const Experience = () => {
             Experience
           </h2>
           <span className="text-xs text-gray-500 font-mono">
-            HISTORY // {experiences.length} ROLES
+            HISTORY // {currentExperiences.length} ROLES
           </span>
         </div>
 
         {/* Compact List Stack */}
         <div className="border border-gray-800/60 bg-[#0D1321]/30 backdrop-blur-sm rounded-xl divide-y divide-gray-800/60 overflow-hidden">
-          {experiences.map((exp, index) => (
+          {currentExperiences.map((exp, index) => (
             <motion.div
               key={index}
               className="p-5 md:px-6 transition-all duration-300 hover:bg-gray-800/20 group flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative"

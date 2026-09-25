@@ -1,17 +1,21 @@
 import process from "process";
+import dotenv from "dotenv";
+dotenv.config();
 
 import app from "./app.js";
+import { dbConnection } from "./config/dbConnection.js";
 
 const PORT = process.env.PORT || 4001;
 
-function serverStart() {
+async function serverStart() {
   try {
+    // Database connection first
+    await dbConnection();
+
     // Create server and listen
     const server = app.listen(PORT, () => {
       console.log(`Server is running at port: http://localhost:${PORT}`);
     });
-
-    // Database connection
 
     // Server Stop
     process.on("SIGTERM", () => {
@@ -22,7 +26,8 @@ function serverStart() {
       });
     });
   } catch (error) {
-    console.error(`Error in server start: ${error.message}`);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`Error in server start: ${errorMessage}`);
   }
 }
 

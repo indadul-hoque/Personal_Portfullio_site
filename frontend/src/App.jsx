@@ -13,6 +13,7 @@ import Education from "./components/Education";
 import Contact from "./components/Contact";
 import CustomCursor from "./components/CustomCursor";
 import Footer from "./components/Footer";
+import { PortfolioDataProvider } from "./context/PortfolioDataContext";
 
 // Separate the main landing page content to keep scrolling logic clean
 const MainLandingPage = () => {
@@ -54,9 +55,11 @@ function App() {
   const [activeSection, setActiveSection] = useState("hero");
 
   return (
-    <Router>
-      <AppContent activeSection={activeSection} />
-    </Router>
+    <PortfolioDataProvider>
+      <Router>
+        <AppContent activeSection={activeSection} />
+      </Router>
+    </PortfolioDataProvider>
   );
 }
 

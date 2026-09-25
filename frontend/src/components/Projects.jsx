@@ -192,9 +192,17 @@ const ProjectPortal = ({ selectedProject, closeProjectDetails }) => {
 };
 
 // --- Main Projects Component ---
+import { usePortfolioData } from "../context/PortfolioDataContext";
+
 const Projects = ({ limit }) => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.05 });
   const [selectedProject, setSelectedProject] = useState(null);
+  const portfolioData = usePortfolioData();
+
+  const currentProjects =
+    portfolioData?.projects && portfolioData.projects.length > 0
+      ? portfolioData.projects
+      : projects;
 
   const openProjectDetails = (project) => {
     setSelectedProject(project);
@@ -206,7 +214,7 @@ const Projects = ({ limit }) => {
     document.body.style.overflow = "auto";
   };
 
-  const displayedProjects = limit ? projects.slice(0, limit) : projects;
+  const displayedProjects = limit ? currentProjects.slice(0, limit) : currentProjects;
 
   return (
     <div className="pt-6">
@@ -225,10 +233,10 @@ const Projects = ({ limit }) => {
 
             <div className="flex items-center gap-4">
               <span className="text-xs text-gray-500 font-mono hidden sm:inline-block select-none">
-                PORTFOLIO // {projects.length} WORKS
+                PORTFOLIO // {currentProjects.length} WORKS
               </span>
 
-              {limit && projects.length > limit && (
+              {limit && currentProjects.length > limit && (
                 <a
                   href="/projects"
                   className="group flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-medium text-gray-400 bg-gray-950/40 border border-gray-800/80 rounded-xl hover:text-orange-400 hover:bg-orange-950/20 transition-all duration-300"
