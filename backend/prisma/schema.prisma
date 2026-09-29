@@ -41,8 +41,8 @@ model Profile {
 // Project Model
 model Projects {
   id              String   @id @default(uuid())
-  projectTittle   String
-  projectDesc     String
+  projectTitle   String
+  projectDescription     String
   displayImage    String
   projectFeatures String[]
   techStack       String[]
