@@ -2,8 +2,9 @@ import type { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { prisma } from "../config/dbConnection.js";
 import generateToken from "../utils/generateToken.js";
+import type { AuthRequest } from "../middlewares/auth.middleware.js";
 
-const SALT_ROUNDS = 12;
+const SALT_ROUNDS = 10;
 
 export const userLogin = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
@@ -62,9 +63,62 @@ export const userLogin = async (req: Request, res: Response): Promise<void> => {
         ? "Account created and logged in successfully"
         : "User logged in successfully",
       isNewUser,
+      user: {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role,
+      },
     });
   } catch (error) {
     console.log("Something went wrong while logging in", error);
     res.status(500).json({ message: "Something went wrong while logging in" });
+  }
+};
+
+export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    if (!req.user) {
+      res.status(401).json({
+        success: false,
+        message: "Not authenticated",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      user: req.user,
+    });
+  } catch (error) {
+    console.log("Error fetching authenticated user", error);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong while fetching current user",
+    });
+  }
+};
+
+export const userLogout = async (
+  _req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    res.clearCookie("adminToken", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== "development",
+      sameSite: process.env.NODE_ENV === "development" ? "lax" : "none",
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "User logged out successfully",
+    });
+  } catch (error) {
+    console.log("Error logging out", error);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong while logging out",
+    });
   }
 };
