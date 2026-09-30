@@ -32,6 +32,7 @@ export const createEducation = async (req, res) => {
             res
                 .status(400)
                 .json({ message: "All fields are required", success: false });
+            return;
         }
         const education = await prisma.education.create({
             data: {
