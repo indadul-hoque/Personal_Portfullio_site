@@ -1,10 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { API_BASE_URL } from "../config";
 
 const PortfolioDataContext = createContext(null);
 
 const STORAGE_KEY = "portfolio_shared_data";
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "http://localhost:4001/api";
 
 export const PortfolioDataProvider = ({ children }) => {
   const [data, setData] = useState(() => {
@@ -43,7 +42,6 @@ export const PortfolioDataProvider = ({ children }) => {
         const res = await fetch(`${API_BASE_URL}/profile/get`);
         if (res.ok) {
           const result = await res.json();
-          console.log(result);
           if (result.success && result.data) {
             setData((prev) => ({
               ...(prev || {}),
@@ -55,7 +53,7 @@ export const PortfolioDataProvider = ({ children }) => {
           }
         }
       } catch (e) {
-        // Backend offline or unreachable, fallback to localStorage/default
+        console.error("Failed to fetch profile from API", e);
       }
     };
 
