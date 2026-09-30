@@ -6,6 +6,7 @@ import {
   GraduationCap,
   Award,
   Mail,
+  BookOpen,
   ArrowUpRight,
   Plus,
   ExternalLink,
@@ -17,7 +18,7 @@ import { useData } from "../context/DataContext";
 import { useAuth } from "../context/AuthContext";
 
 const Overview = () => {
-  const { profile, projects, experiences, educations, certificates, messages } = useData();
+  const { profile, projects, experiences, educations, certificates, blogs = [], messages } = useData();
   const { user } = useAuth();
 
   const unreadCount = messages.filter((m) => m.unread).length;
@@ -54,6 +55,14 @@ const Overview = () => {
       color: "from-amber-500 to-orange-600",
       link: "/certificates",
       badge: "Verified Skills",
+    },
+    {
+      title: "Blog Articles",
+      value: blogs.length,
+      icon: BookOpen,
+      color: "from-fuchsia-500 to-purple-600",
+      link: "/blogs",
+      badge: `${blogs.filter((b) => b.status === "published").length} Published`,
     },
     {
       title: "Visitor Messages",

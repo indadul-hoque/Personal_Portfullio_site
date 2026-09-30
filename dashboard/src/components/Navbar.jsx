@@ -1,6 +1,6 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
-import { Bell, ExternalLink, ShieldCheck, Sparkles } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Bell, ExternalLink, ShieldCheck, Sparkles, LogOut } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
 
@@ -11,17 +11,26 @@ const routeNames = {
   "/experience": "Experience & Career History",
   "/education": "Academic Background",
   "/certificates": "Licenses & Certifications",
+  "/blogs": "Blog & Markdown Manager",
   "/messages": "Visitor Inquiries & Inbox",
   "/settings": "Settings & Database Sync",
 };
 
 const Navbar = () => {
   const location = useLocation();
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const { messages } = useData();
 
   const currentTitle = routeNames[location.pathname] || "Dashboard";
   const unreadCount = messages?.filter((m) => m.unread).length || 0;
+
+  const handleLogout = async () => {
+    if (window.confirm("Are you sure you want to sign out of the admin dashboard?")) {
+      await logout();
+      navigate("/login");
+    }
+  };
 
   return (
     <header className="h-16 border-b border-gray-800/80 bg-[#0B0F19]/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between px-6">
@@ -32,7 +41,7 @@ const Navbar = () => {
         </h1>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 sm:gap-4">
         {/* Live Site Preview Button */}
         <a
           href="http://localhost:5173"
@@ -69,9 +78,20 @@ const Navbar = () => {
             <span className="text-[10px] text-gray-400 font-mono">Full Access</span>
           </div>
         </div>
+
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-rose-400 bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 hover:border-rose-500/40 hover:text-rose-300 transition-all shadow-sm focus:outline-none active:scale-95"
+          title="Sign Out of Dashboard"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Logout</span>
+        </button>
       </div>
     </header>
   );
 };
 
 export default Navbar;
+

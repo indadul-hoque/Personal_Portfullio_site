@@ -13,6 +13,7 @@ import ProjectsManager from "./pages/ProjectsManager";
 import ExperienceManager from "./pages/ExperienceManager";
 import EducationManager from "./pages/EducationManager";
 import CertificatesManager from "./pages/CertificatesManager";
+import BlogsManagement from "./pages/BlogsManagement";
 import MessagesManager from "./pages/MessagesManager";
 import Settings from "./pages/Settings";
 
@@ -40,6 +41,7 @@ function App() {
                 <Route path="/experience" element={<ExperienceManager />} />
                 <Route path="/education" element={<EducationManager />} />
                 <Route path="/certificates" element={<CertificatesManager />} />
+                <Route path="/blogs" element={<BlogsManagement />} />
                 <Route path="/messages" element={<MessagesManager />} />
                 <Route path="/settings" element={<Settings />} />
               </Route>

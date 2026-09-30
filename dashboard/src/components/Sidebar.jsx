@@ -15,6 +15,7 @@ import {
   ChevronRight,
   Sparkles,
   ShieldCheck,
+  BookOpen,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useData } from "../context/DataContext";
@@ -26,6 +27,7 @@ const navItems = [
   { name: "Experience", path: "/experience", icon: Briefcase, badgeKey: "experiences" },
   { name: "Education", path: "/education", icon: GraduationCap, badgeKey: "educations" },
   { name: "Certificates", path: "/certificates", icon: Award, badgeKey: "certificates" },
+  { name: "Blog Posts", path: "/blogs", icon: BookOpen, badgeKey: "blogs" },
   { name: "Inquiries", path: "/messages", icon: Mail, badgeKey: "unreadMessages" },
   { name: "Settings", path: "/settings", icon: Settings },
 ];
