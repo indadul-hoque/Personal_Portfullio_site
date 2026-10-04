@@ -24,13 +24,35 @@ const educations = [
 
 import { usePortfolioData } from "../context/PortfolioDataContext";
 
+// Maps API field names → component field names
+const normalizeEducation = (edu) => {
+  // If it's already in default shape, return as-is
+  if (edu.degree) return edu;
+
+  const startYear = edu.startDate
+    ? new Date(edu.startDate).getFullYear()
+    : null;
+  const endYear = edu.endDate ? new Date(edu.endDate).getFullYear() : null;
+  const isCurrentlyPursuing = !edu.endDate || new Date(edu.endDate) > new Date();
+
+  return {
+    degree: edu.degreeName || "Degree",
+    institution: edu.institutionName || "Institution",
+    year: startYear && endYear ? `${startYear} - ${endYear}` : startYear || "N/A",
+    description: edu.description || (edu.fieldOfStudy ? `Field of Study: ${edu.fieldOfStudy}` : ""),
+    current: isCurrentlyPursuing,
+  };
+};
+
 const Education = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.05 });
-  const portfolioData = usePortfolioData();
+  const { educations: apiEducations } = usePortfolioData();
 
+  // Use API data if available, otherwise fall back to default data
+  // Normalize API data to match component's expected shape
   const currentEducations =
-    portfolioData?.educations && portfolioData.educations.length > 0
-      ? portfolioData.educations
+    apiEducations && apiEducations.length > 0
+      ? apiEducations.map(normalizeEducation)
       : educations;
 
   return (

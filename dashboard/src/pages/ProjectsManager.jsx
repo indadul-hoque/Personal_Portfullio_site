@@ -7,22 +7,18 @@ import {
   Edit2,
   Trash2,
   X,
-  Check,
   FolderGit2,
-  Sparkles,
-  Layers,
 } from "lucide-react";
 import { useData } from "../context/DataContext";
 
 const defaultProjectState = {
-  title: "",
-  description: "",
-  image: "",
-  technologies: [],
-  features: [],
-  demoLink: "",
-  codeLink: "",
-  featured: false,
+  projectTitle: "",
+  projectDescription: "",
+  displayImage: "",
+  techStack: [],
+  projectFeatures: [],
+  liveLink: "",
+  repoLink: "",
 };
 
 const ProjectsManager = () => {
@@ -33,16 +29,15 @@ const ProjectsManager = () => {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState(defaultProjectState);
 
-  // Tag inputs
   const [techInput, setTechInput] = useState("");
   const [featureInput, setFeatureInput] = useState("");
 
   const filteredProjects = projects.filter((p) => {
     const q = searchQuery.toLowerCase();
     return (
-      p.title.toLowerCase().includes(q) ||
-      p.description.toLowerCase().includes(q) ||
-      p.technologies?.some((t) => t.toLowerCase().includes(q))
+      p.projectTitle?.toLowerCase().includes(q) ||
+      p.projectDescription?.toLowerCase().includes(q) ||
+      p.techStack?.some((t) => t.toLowerCase().includes(q))
     );
   });
 
@@ -57,14 +52,15 @@ const ProjectsManager = () => {
   const handleOpenEditModal = (project) => {
     setEditingId(project.id);
     setFormData({
-      title: project.title || "",
-      description: project.description || "",
-      image: project.image || "",
-      technologies: project.technologies ? [...project.technologies] : [],
-      features: project.features ? [...project.features] : [],
-      demoLink: project.demoLink || "",
-      codeLink: project.codeLink || "",
-      featured: !!project.featured,
+      projectTitle: project.projectTitle || "",
+      projectDescription: project.projectDescription || "",
+      displayImage: project.displayImage || "",
+      techStack: project.techStack ? [...project.techStack] : [],
+      projectFeatures: project.projectFeatures
+        ? [...project.projectFeatures]
+        : [],
+      liveLink: project.liveLink || "",
+      repoLink: project.repoLink || "",
     });
     setTechInput("");
     setFeatureInput("");
@@ -74,10 +70,10 @@ const ProjectsManager = () => {
   const handleAddTech = (e) => {
     e?.preventDefault();
     if (!techInput.trim()) return;
-    if (!formData.technologies.includes(techInput.trim())) {
+    if (!formData.techStack.includes(techInput.trim())) {
       setFormData({
         ...formData,
-        technologies: [...formData.technologies, techInput.trim()],
+        techStack: [...formData.techStack, techInput.trim()],
       });
     }
     setTechInput("");
@@ -86,7 +82,7 @@ const ProjectsManager = () => {
   const handleRemoveTech = (tag) => {
     setFormData({
       ...formData,
-      technologies: formData.technologies.filter((t) => t !== tag),
+      techStack: formData.techStack.filter((t) => t !== tag),
     });
   };
 
@@ -95,7 +91,7 @@ const ProjectsManager = () => {
     if (!featureInput.trim()) return;
     setFormData({
       ...formData,
-      features: [...formData.features, featureInput.trim()],
+      projectFeatures: [...formData.projectFeatures, featureInput.trim()],
     });
     setFeatureInput("");
   };
@@ -103,18 +99,28 @@ const ProjectsManager = () => {
   const handleRemoveFeature = (idx) => {
     setFormData({
       ...formData,
-      features: formData.features.filter((_, i) => i !== idx),
+      projectFeatures: formData.projectFeatures.filter((_, i) => i !== idx),
     });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.title.trim()) return;
+    if (!formData.projectTitle.trim()) return;
+
+    const payload = {
+      projectTitle: formData.projectTitle.trim(),
+      projectDescription: formData.projectDescription.trim(),
+      displayImage: formData.displayImage.trim(),
+      techStack: formData.techStack,
+      projectFeatures: formData.projectFeatures,
+      liveLink: formData.liveLink.trim() || null,
+      repoLink: formData.repoLink.trim() || null,
+    };
 
     if (editingId) {
-      updateProject(editingId, formData);
+      updateProject(editingId, payload);
     } else {
-      addProject(formData);
+      addProject(payload);
     }
     setModalOpen(false);
   };
@@ -166,33 +172,32 @@ const ProjectsManager = () => {
                 {/* Project Image Thumbnail */}
                 <div className="relative h-44 w-full bg-gray-900 overflow-hidden border-b border-gray-800">
                   <img
-                    src={project.image || "https://images.unsplash.com/photo-1557821552-17105176677c?auto=format&fit=crop&w=800&q=80"}
-                    alt={project.title}
+                    src={
+                      project.displayImage ||
+                      "https://images.unsplash.com/photo-1557821552-17105176677c?auto=format&fit=crop&w=800&q=80"
+                    }
+                    alt={project.projectTitle}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     onError={(e) => {
-                      e.target.src = "https://images.unsplash.com/photo-1557821552-17105176677c?auto=format&fit=crop&w=800&q=80";
+                      e.target.src =
+                        "https://images.unsplash.com/photo-1557821552-17105176677c?auto=format&fit=crop&w=800&q=80";
                     }}
                   />
-                  {project.featured && (
-                    <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full bg-purple-600/90 text-white text-[10px] font-mono shadow-md backdrop-blur-sm">
-                      Featured
-                    </span>
-                  )}
                 </div>
 
                 {/* Content */}
                 <div className="p-5 space-y-3">
                   <h3 className="text-base font-bold text-white group-hover:text-purple-300 transition-colors">
-                    {project.title}
+                    {project.projectTitle}
                   </h3>
 
                   <p className="text-xs text-gray-400 line-clamp-2 leading-relaxed">
-                    {project.description}
+                    {project.projectDescription}
                   </p>
 
                   {/* Tech stack pills */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
-                    {project.technologies?.map((tech, i) => (
+                    {project.techStack?.map((tech, i) => (
                       <span
                         key={i}
                         className="text-[10px] font-mono px-2 py-0.5 rounded bg-gray-800/80 text-gray-300 border border-gray-700/60"
@@ -207,20 +212,20 @@ const ProjectsManager = () => {
               {/* Bottom Footer Actions */}
               <div className="p-4 border-t border-gray-800/60 flex items-center justify-between bg-black/10">
                 <div className="flex items-center gap-2">
-                  {project.demoLink && (
+                  {project.liveLink && (
                     <a
-                      href={project.demoLink}
+                      href={project.liveLink}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
-                      title="Demo"
+                      title="Live Demo"
                     >
                       <ExternalLink className="w-4 h-4" />
                     </a>
                   )}
-                  {project.codeLink && (
+                  {project.repoLink && (
                     <a
-                      href={project.codeLink}
+                      href={project.repoLink}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
@@ -240,7 +245,9 @@ const ProjectsManager = () => {
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(project.id, project.title)}
+                    onClick={() =>
+                      handleDelete(project.id, project.projectTitle)
+                    }
                     className="p-1.5 rounded-lg text-gray-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                     title="Delete"
                   >
@@ -255,8 +262,8 @@ const ProjectsManager = () => {
 
       {/* Add / Edit Project Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-2xl bg-[#0D1321] border border-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 space-y-6 my-8">
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 py-8 bg-black/80 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-[#0D1321] border border-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 space-y-6 my-auto">
             <div className="flex items-center justify-between border-b border-gray-800 pb-4">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <FolderGit2 className="w-5 h-5 text-purple-400" />
@@ -271,32 +278,21 @@ const ProjectsManager = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Title & Featured */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider mb-1.5">
-                    Project Title *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="e.g. Modern AI SaaS Platform"
-                    className="w-full px-3.5 py-2.5 bg-[#0B0F19] border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-purple-500 font-mono"
-                  />
-                </div>
-                <div className="flex items-center pt-6">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-mono text-gray-300">
-                    <input
-                      type="checkbox"
-                      checked={formData.featured}
-                      onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                      className="w-4 h-4 rounded text-purple-600 bg-gray-900 border-gray-700 focus:ring-purple-500"
-                    />
-                    Featured Project
-                  </label>
-                </div>
+              {/* Title */}
+              <div>
+                <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider mb-1.5">
+                  Project Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.projectTitle}
+                  onChange={(e) =>
+                    setFormData({ ...formData, projectTitle: e.target.value })
+                  }
+                  placeholder="e.g. Modern AI SaaS Platform"
+                  className="w-full px-3.5 py-2.5 bg-[#0B0F19] border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-purple-500 font-mono"
+                />
               </div>
 
               {/* Description */}
@@ -307,8 +303,13 @@ const ProjectsManager = () => {
                 <textarea
                   rows={3}
                   required
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  value={formData.projectDescription}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      projectDescription: e.target.value,
+                    })
+                  }
                   placeholder="Detailed description of project architecture and achievements..."
                   className="w-full px-3.5 py-2.5 bg-[#0B0F19] border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-purple-500 font-mono"
                 />
@@ -321,15 +322,17 @@ const ProjectsManager = () => {
                 </label>
                 <input
                   type="text"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                  value={formData.displayImage}
+                  onChange={(e) =>
+                    setFormData({ ...formData, displayImage: e.target.value })
+                  }
                   placeholder="https://images.unsplash.com/..."
                   className="w-full px-3.5 py-2.5 bg-[#0B0F19] border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-purple-500 font-mono"
                 />
-                {formData.image && (
+                {formData.displayImage && (
                   <div className="mt-2 h-24 w-full rounded-lg overflow-hidden border border-gray-800">
                     <img
-                      src={formData.image}
+                      src={formData.displayImage}
                       alt="Preview"
                       className="w-full h-full object-cover"
                       onError={(e) => {
@@ -368,7 +371,7 @@ const ProjectsManager = () => {
                   </button>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {formData.technologies.map((tech) => (
+                  {formData.techStack.map((tech) => (
                     <span
                       key={tech}
                       className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-mono"
@@ -414,7 +417,7 @@ const ProjectsManager = () => {
                   </button>
                 </div>
                 <div className="space-y-1">
-                  {formData.features.map((feat, idx) => (
+                  {formData.projectFeatures.map((feat, idx) => (
                     <div
                       key={idx}
                       className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-[#0B0F19] border border-gray-800 text-xs text-gray-300 font-mono"
@@ -440,8 +443,10 @@ const ProjectsManager = () => {
                   </label>
                   <input
                     type="url"
-                    value={formData.demoLink}
-                    onChange={(e) => setFormData({ ...formData, demoLink: e.target.value })}
+                    value={formData.liveLink}
+                    onChange={(e) =>
+                      setFormData({ ...formData, liveLink: e.target.value })
+                    }
                     placeholder="https://my-app.vercel.app"
                     className="w-full px-3.5 py-2.5 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
                   />
@@ -452,8 +457,10 @@ const ProjectsManager = () => {
                   </label>
                   <input
                     type="url"
-                    value={formData.codeLink}
-                    onChange={(e) => setFormData({ ...formData, codeLink: e.target.value })}
+                    value={formData.repoLink}
+                    onChange={(e) =>
+                      setFormData({ ...formData, repoLink: e.target.value })
+                    }
                     placeholder="https://github.com/..."
                     className="w-full px-3.5 py-2.5 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
                   />

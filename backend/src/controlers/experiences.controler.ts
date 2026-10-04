@@ -1,6 +1,10 @@
 import type { Request, Response } from "express";
 import { prisma } from "../config/dbConnection.js";
 
+interface experienceParams {
+  id: string;
+}
+// Get All Experiences
 export const getExperience = async (
   _req: Request,
   res: Response,
@@ -12,6 +16,7 @@ export const getExperience = async (
         message: "Experiences are not found.",
         success: false,
       });
+      return;
     }
 
     res.status(200).json({
@@ -25,6 +30,7 @@ export const getExperience = async (
   }
 };
 
+// Add Experience
 export const createExperience = async (
   req: Request,
   res: Response,
@@ -43,6 +49,7 @@ export const createExperience = async (
       res
         .status(400)
         .json({ message: "All fields are required", success: false });
+      return;
     }
 
     const experience = await prisma.experience.create({
@@ -66,8 +73,9 @@ export const createExperience = async (
   }
 };
 
+// Update Experience
 export const updateExperience = async (
-  req: Request,
+  req: Request<experienceParams>,
   res: Response,
 ): Promise<void> => {
   try {
@@ -75,7 +83,7 @@ export const updateExperience = async (
     const { companyName, jobTitle, jobDescription, startDate, endDate } =
       req.body;
 
-    if (!id || typeof id !== "string") {
+    if (!id) {
       res
         .status(400)
         .json({ message: "Experience ID is required", success: false });
@@ -106,6 +114,44 @@ export const updateExperience = async (
     res.status(200).json({
       message: "Experience updated successfully.",
       data: updatedExperience,
+      success: true,
+    });
+  } catch (error) {
+    console.log("Internal server error", error);
+    res.status(500).json({ message: "Internal server error", success: false });
+  }
+};
+
+// Delete Experience
+export const deleteExperience = async (
+  req: Request<experienceParams>,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    if (!id) {
+      res
+        .status(400)
+        .json({ message: "Experience ID is required", success: false });
+      return;
+    }
+
+    const experienceExists = await prisma.experience.findUnique({
+      where: { id },
+    });
+
+    if (!experienceExists) {
+      res.status(404).json({ message: "Experience not found", success: false });
+      return;
+    }
+
+    const deletedExperience = await prisma.experience.delete({
+      where: { id },
+    });
+
+    res.status(200).json({
+      message: "Experience deleted successfully.",
+      data: deletedExperience,
       success: true,
     });
   } catch (error) {

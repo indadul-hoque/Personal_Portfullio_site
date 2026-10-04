@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, Shield, Sparkles, ArrowRight, AlertCircle, CheckCircle2 } from "lucide-react";
+import toast from "react-hot-toast";
 import { useAuth } from "../context/AuthContext";
 
 const Login = () => {
@@ -27,9 +28,12 @@ const Login = () => {
     setIsSubmitting(false);
 
     if (result.success) {
+      toast.success("Welcome back! Logged in successfully.");
       navigate("/");
     } else {
-      setLocalError(result.message || "Invalid credentials. Please try again.");
+      const errMsg = result.message || "Invalid credentials. Please try again.";
+      setLocalError(errMsg);
+      toast.error(errMsg);
     }
   };
 

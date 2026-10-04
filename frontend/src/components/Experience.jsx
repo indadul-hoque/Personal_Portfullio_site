@@ -2,6 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { FiCalendar, FiArrowUpRight } from "react-icons/fi";
+import { usePortfolioData } from "../context/PortfolioDataContext";
 
 const experiences = [
   {
@@ -27,15 +28,38 @@ const experiences = [
   },
 ];
 
-import { usePortfolioData } from "../context/PortfolioDataContext";
+// Maps API field names → component field names
+const normalizeExperience = (exp) => {
+  // If already in default shape, return as-is
+  if (exp.title) return exp;
 
+  const start = exp.startDate ? new Date(exp.startDate) : null;
+  const end = exp.endDate ? new Date(exp.endDate) : null;
+  const isCurrentlyPursuing = !end || end > new Date();
+
+  // Format: "Jul 2024 - Aug 2024" style
+  const fmt = (d) =>
+    d ? d.toLocaleDateString("en-US", { month: "short", year: "numeric" }) : null;
+  const dateStr = start && end
+    ? `${fmt(start)} - ${isCurrentlyPursuing ? "Present" : fmt(end)}`
+    : fmt(start) || "N/A";
+
+  return {
+    title: exp.jobTitle || "Job Title",
+    company: exp.companyName || "Company",
+    date: dateStr,           // ← template uses exp.date on line 117
+    duration: exp.employmentType || "",
+    current: isCurrentlyPursuing,
+  };
+};
 const Experience = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.05 });
-  const portfolioData = usePortfolioData();
+  const { experiences: apiExperiences } = usePortfolioData();
 
+  // Use API data if available, otherwise fall back to default data
   const currentExperiences =
-    portfolioData?.experiences && portfolioData.experiences.length > 0
-      ? portfolioData.experiences
+    apiExperiences && apiExperiences.length > 0
+      ? apiExperiences.map(normalizeExperience)
       : experiences;
 
   return (

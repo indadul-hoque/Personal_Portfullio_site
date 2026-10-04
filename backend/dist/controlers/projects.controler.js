@@ -1,4 +1,5 @@
 import { prisma } from "../config/dbConnection.js";
+// Get All Projects
 export const getProjects = async (_req, res) => {
     try {
         const projects = await prisma.projects.findMany();
@@ -15,6 +16,7 @@ export const getProjects = async (_req, res) => {
         res.status(500).json({ message: "Internal server error", success: false });
     }
 };
+// Add Project
 export const addProject = async (req, res) => {
     try {
         const { projectTitle, projectDescription, displayImage, projectFeatures, techStack, liveLink, repoLink, } = req.body;
@@ -55,6 +57,7 @@ export const addProject = async (req, res) => {
         });
     }
 };
+// Update Project
 export const updateProject = async (req, res) => {
     try {
         const { id } = req.params;
@@ -82,6 +85,35 @@ export const updateProject = async (req, res) => {
             message: "Internal server error",
             success: false,
         });
+    }
+};
+// Delete Project
+export const deleteProject = async (req, res) => {
+    try {
+        const { id } = req.params;
+        if (!id || typeof id !== "string") {
+            res.status(400).json({ message: "Id is required", success: false });
+            return;
+        }
+        const projectExists = await prisma.projects.findUnique({
+            where: { id },
+        });
+        if (!projectExists) {
+            res.status(404).json({ message: "Project not found", success: false });
+            return;
+        }
+        const deletedProject = await prisma.projects.delete({
+            where: { id },
+        });
+        res.status(200).json({
+            message: "Project deleted successfully.",
+            data: deletedProject,
+            success: true,
+        });
+    }
+    catch (error) {
+        console.log("Internal server error", error);
+        res.status(500).json({ message: "Internal server error", success: false });
     }
 };
 //# sourceMappingURL=projects.controler.js.map

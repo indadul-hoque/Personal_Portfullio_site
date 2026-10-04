@@ -1,25 +1,35 @@
 import React, { useState } from "react";
-import {
-  GraduationCap,
-  Plus,
-  Calendar,
-  BookOpen,
-  Edit2,
-  Trash2,
-  X,
-} from "lucide-react";
+import { GraduationCap, Plus, Calendar, Edit2, Trash2, X } from "lucide-react";
 import { useData } from "../context/DataContext";
 
 const defaultEduState = {
-  institution: "",
-  degree: "",
-  field: "",
-  date: "",
+  institutionName: "",
+  degreeName: "",
+  fieldOfStudy: "",
   description: "",
+  startDate: "",
+  endDate: "",
+};
+
+// "2021-06-01" → "Jun 2021"
+const formatMonth = (iso) => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+};
+
+// "Jun 2021 – Present"
+const formatRange = (start, end) => {
+  const s = formatMonth(start);
+  const e = end ? formatMonth(end) : "Present";
+  if (!s) return "";
+  return `${s} – ${e}`;
 };
 
 const EducationManager = () => {
-  const { educations, addEducation, updateEducation, deleteEducation } = useData();
+  const { educations, addEducation, updateEducation, deleteEducation } =
+    useData();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -34,29 +44,42 @@ const EducationManager = () => {
   const handleOpenEditModal = (edu) => {
     setEditingId(edu.id);
     setFormData({
-      institution: edu.institution || "",
-      degree: edu.degree || "",
-      field: edu.field || "",
-      date: edu.date || "",
+      institutionName: edu.institutionName || "",
+      degreeName: edu.degreeName || "",
+      fieldOfStudy: edu.fieldOfStudy || "",
       description: edu.description || "",
+      startDate: edu.startDate ? edu.startDate.slice(0, 10) : "",
+      endDate: edu.endDate ? edu.endDate.slice(0, 10) : "",
     });
     setModalOpen(true);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.institution.trim() || !formData.degree.trim()) return;
+    if (!formData.institutionName.trim() || !formData.degreeName.trim()) return;
+    if (!formData.startDate) return;
+
+    const payload = {
+      institutionName: formData.institutionName.trim(),
+      degreeName: formData.degreeName.trim(),
+      fieldOfStudy: formData.fieldOfStudy.trim(),
+      description: formData.description.trim(),
+      startDate: new Date(formData.startDate).toISOString(),
+      endDate: formData.endDate
+        ? new Date(formData.endDate).toISOString()
+        : null,
+    };
 
     if (editingId) {
-      updateEducation(editingId, formData);
+      updateEducation(editingId, payload);
     } else {
-      addEducation(formData);
+      addEducation(payload);
     }
     setModalOpen(false);
   };
 
-  const handleDelete = (id, degree) => {
-    if (window.confirm(`Delete education record for "${degree}"?`)) {
+  const handleDelete = (id, degreeName) => {
+    if (window.confirm(`Delete education record for "${degreeName}"?`)) {
       deleteEducation(id);
     }
   };
@@ -107,7 +130,7 @@ const EducationManager = () => {
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(edu.id, edu.degree)}
+                      onClick={() => handleDelete(edu.id, edu.degreeName)}
                       className="p-1.5 rounded-lg text-gray-400 hover:text-rose-400 hover:bg-rose-500/10"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -116,21 +139,27 @@ const EducationManager = () => {
                 </div>
 
                 <div>
-                  <h3 className="text-base font-bold text-white">{edu.degree}</h3>
-                  <p className="text-xs text-teal-400 font-mono font-medium">{edu.institution}</p>
+                  <h3 className="text-base font-bold text-white">
+                    {edu.degreeName}
+                  </h3>
+                  <p className="text-xs text-teal-400 font-mono font-medium">
+                    {edu.institutionName}
+                  </p>
                 </div>
 
-                <div className="flex items-center gap-3 text-xs text-gray-400 font-mono pt-1">
-                  <span>{edu.field}</span>
+                <div className="flex items-center flex-wrap gap-3 text-xs text-gray-400 font-mono pt-1">
+                  <span>{edu.fieldOfStudy}</span>
                   <span>•</span>
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3.5 h-3.5 text-gray-500" />
-                    {edu.date}
+                    {formatRange(edu.startDate, edu.endDate)}
                   </span>
                 </div>
 
                 {edu.description && (
-                  <p className="text-xs text-gray-400 pt-1 leading-relaxed">{edu.description}</p>
+                  <p className="text-xs text-gray-400 pt-1 leading-relaxed">
+                    {edu.description}
+                  </p>
                 )}
               </div>
             </div>
@@ -141,7 +170,7 @@ const EducationManager = () => {
       {/* Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-lg bg-[#0D1321] border border-gray-800 rounded-2xl shadow-2xl p-6 space-y-4">
+          <div className="relative w-full max-w-lg bg-[#0D1321] border border-gray-800 rounded-2xl shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-gray-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <GraduationCap className="w-4 h-4 text-purple-400" />
@@ -163,8 +192,10 @@ const EducationManager = () => {
                 <input
                   type="text"
                   required
-                  value={formData.degree}
-                  onChange={(e) => setFormData({ ...formData, degree: e.target.value })}
+                  value={formData.degreeName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, degreeName: e.target.value })
+                  }
                   placeholder="e.g. Bachelor of Technology"
                   className="w-full px-3.5 py-2.5 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
                 />
@@ -177,9 +208,29 @@ const EducationManager = () => {
                 <input
                   type="text"
                   required
-                  value={formData.institution}
-                  onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
+                  value={formData.institutionName}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      institutionName: e.target.value,
+                    })
+                  }
                   placeholder="e.g. Techno International New Town"
+                  className="w-full px-3.5 py-2.5 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider mb-1">
+                  Field of Study
+                </label>
+                <input
+                  type="text"
+                  value={formData.fieldOfStudy}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fieldOfStudy: e.target.value })
+                  }
+                  placeholder="e.g. Computer Science"
                   className="w-full px-3.5 py-2.5 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
                 />
               </div>
@@ -187,27 +238,33 @@ const EducationManager = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider mb-1">
-                    Field of Study
+                    Start Date *
                   </label>
                   <input
-                    type="text"
-                    value={formData.field}
-                    onChange={(e) => setFormData({ ...formData, field: e.target.value })}
-                    placeholder="e.g. Computer Science"
+                    type="date"
+                    required
+                    value={formData.startDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, startDate: e.target.value })
+                    }
                     className="w-full px-3.5 py-2.5 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider mb-1">
-                    Years / Timeline
+                    End Date
                   </label>
                   <input
-                    type="text"
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    placeholder="e.g. 2021 - 2025"
+                    type="date"
+                    value={formData.endDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, endDate: e.target.value })
+                    }
                     className="w-full px-3.5 py-2.5 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
                   />
+                  <p className="text-[10px] text-gray-500 font-mono mt-1">
+                    Leave empty if ongoing
+                  </p>
                 </div>
               </div>
 
@@ -218,8 +275,10 @@ const EducationManager = () => {
                 <textarea
                   rows={2}
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Additional details, GPA, honors..."
+                  onChange={(e) =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  placeholder="Additional details, honors..."
                   className="w-full px-3.5 py-2.5 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
                 />
               </div>

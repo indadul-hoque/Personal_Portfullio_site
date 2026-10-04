@@ -58,6 +58,7 @@ model Education {
   institutionName String
   degreeName      String
   fieldOfStudy    String
+  description  String
   startDate       DateTime
   endDate         DateTime
   createdAt       DateTime @default(now())

@@ -3,11 +3,12 @@ import { Eye } from "lucide-react";
 import { motion } from "framer-motion";
 import Projects from "./Projects";
 import { usePortfolioData } from "../context/PortfolioDataContext";
-
+import { API_BASE_URL } from "../config";
 const defaultSkills = [
   {
     name: "JavaScript",
-    styles: "hover:text-yellow-400 hover:border-yellow-500/30 hover:bg-yellow-950/20",
+    styles:
+      "hover:text-yellow-400 hover:border-yellow-500/30 hover:bg-yellow-950/20",
   },
   {
     name: "TypeScript",
@@ -19,15 +20,18 @@ const defaultSkills = [
   },
   {
     name: "Node.js",
-    styles: "hover:text-emerald-400 hover:border-emerald-500/30 hover:bg-emerald-950/30",
+    styles:
+      "hover:text-emerald-400 hover:border-emerald-500/30 hover:bg-emerald-950/30",
   },
   {
     name: "Express.js",
-    styles: "hover:text-amber-400 hover:border-amber-500/30 hover:bg-amber-950/30",
+    styles:
+      "hover:text-amber-400 hover:border-amber-500/30 hover:bg-amber-950/30",
   },
   {
     name: "MongoDB",
-    styles: "hover:text-green-400 hover:border-green-500/30 hover:bg-green-950/30",
+    styles:
+      "hover:text-green-400 hover:border-green-500/30 hover:bg-green-950/30",
   },
   {
     name: "Next.js",
@@ -39,15 +43,18 @@ const defaultSkills = [
   },
   {
     name: "RESTful APIs",
-    styles: "hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-950/20",
+    styles:
+      "hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-950/20",
   },
   {
     name: "CI/CD",
-    styles: "hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-950/20",
+    styles:
+      "hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-950/20",
   },
   {
     name: "Git",
-    styles: "hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-950/20",
+    styles:
+      "hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-950/20",
   },
 ];
 
@@ -55,7 +62,11 @@ const getSkillStyle = (skillName) => {
   const lower = skillName.toLowerCase();
   if (lower.includes("javascript") || lower.includes("js"))
     return "hover:text-yellow-400 hover:border-yellow-500/30 hover:bg-yellow-950/20";
-  if (lower.includes("typescript") || lower.includes("ts") || lower.includes("docker"))
+  if (
+    lower.includes("typescript") ||
+    lower.includes("ts") ||
+    lower.includes("docker")
+  )
     return "hover:text-blue-400 hover:border-blue-500/30 hover:bg-blue-950/30";
   if (lower.includes("react"))
     return "hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-950/30";
@@ -67,7 +78,11 @@ const getSkillStyle = (skillName) => {
     return "hover:text-sky-400 hover:border-sky-500/30 hover:bg-sky-950/30";
   if (lower.includes("next"))
     return "hover:text-white hover:border-gray-500/30 hover:bg-gray-800/40";
-  if (lower.includes("prisma") || lower.includes("postgres") || lower.includes("sql"))
+  if (
+    lower.includes("prisma") ||
+    lower.includes("postgres") ||
+    lower.includes("sql")
+  )
     return "hover:text-indigo-400 hover:border-indigo-500/30 hover:bg-indigo-950/30";
   if (lower.includes("git") || lower.includes("ci/cd"))
     return "hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-950/20";
@@ -86,7 +101,7 @@ const Hero = () => {
   const cvDownloadUrl = profile?.cvURL
     ? profile.cvURL.startsWith("http")
       ? profile.cvURL
-      : `http://localhost:4001${profile.cvURL.startsWith("/") ? "" : "/"}${profile.cvURL}`
+      : `${API_BASE_URL}${profile.cvURL.startsWith("/") ? "" : "/"}${profile.cvURL}`
     : "/Indadul_Hoque.pdf";
 
   return (
@@ -205,4 +220,3 @@ const Hero = () => {
 };
 
 export default Hero;
-

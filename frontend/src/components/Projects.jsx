@@ -80,7 +80,7 @@ const getTechStyle = (tech) => {
   return "hover:text-purple-400 hover:border-purple-500/30 hover:bg-purple-950/20";
 };
 
-// --- Sub-component to handle DOM Portal tracking for exit animations ---
+// --- Project Details Modal ---
 const ProjectPortal = ({ selectedProject, closeProjectDetails }) => {
   return ReactDOM.createPortal(
     <motion.div
@@ -101,8 +101,8 @@ const ProjectPortal = ({ selectedProject, closeProjectDetails }) => {
       >
         <div className="relative h-56 md:h-64 bg-gray-950 border-b border-gray-800/60">
           <img
-            src={selectedProject.image}
-            alt={selectedProject.title}
+            src={selectedProject.displayImage}
+            alt={selectedProject.projectTitle}
             className="w-full h-full object-cover opacity-80"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0D1321] via-transparent to-transparent" />
@@ -117,10 +117,10 @@ const ProjectPortal = ({ selectedProject, closeProjectDetails }) => {
         <div className="p-6 md:p-8 space-y-6">
           <div>
             <h2 className="text-xl font-bold text-white tracking-tight mb-2">
-              {selectedProject.title}
+              {selectedProject.projectTitle}
             </h2>
             <p className="text-sm leading-relaxed text-gray-400">
-              {selectedProject.description}
+              {selectedProject.projectDescription}
             </p>
           </div>
 
@@ -129,7 +129,7 @@ const ProjectPortal = ({ selectedProject, closeProjectDetails }) => {
               Features
             </h3>
             <ul className="grid sm:grid-cols-2 gap-2 text-xs text-gray-400">
-              {selectedProject.features.map((feature, index) => (
+              {(selectedProject.projectFeatures ?? []).map((feature, index) => (
                 <li
                   key={index}
                   className="flex items-start gap-2 bg-gray-900/30 border border-gray-800/40 p-2 rounded-lg"
@@ -149,7 +149,7 @@ const ProjectPortal = ({ selectedProject, closeProjectDetails }) => {
               Tech Stack
             </h3>
             <div className="flex flex-wrap gap-1.5">
-              {selectedProject.technologies.map((tech, index) => (
+              {(selectedProject.techStack ?? []).map((tech, index) => (
                 <span
                   key={index}
                   className={`px-2.5 py-1 text-xs font-mono font-medium text-gray-400 bg-gray-900/80 border border-gray-800 rounded-xl transition-all duration-300 ${getTechStyle(tech)}`}
@@ -162,16 +162,16 @@ const ProjectPortal = ({ selectedProject, closeProjectDetails }) => {
 
           <div className="flex gap-3 pt-2 border-t border-gray-800/60">
             <a
-              href={selectedProject.demoLink}
+              href={selectedProject.liveLink}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 py-2.5 rounded-xl text-xs font-medium tracking-wide bg-gray-900 text-gray-200 border border-gray-800 hover:text-orange-400 hover:bg-orange-950/20 hover:border-gray-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-md"
             >
               <FiExternalLink size={14} /> Live Deployment
             </a>
-            {selectedProject.codeLink && selectedProject.codeLink !== "#" ? (
+            {selectedProject.repoLink && selectedProject.repoLink !== "#" ? (
               <a
-                href={selectedProject.codeLink}
+                href={selectedProject.repoLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 py-2.5 rounded-xl text-xs font-medium tracking-wide bg-gray-900 text-gray-200 border border-gray-800 hover:text-orange-400 hover:bg-orange-950/20 hover:border-gray-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-md"
@@ -198,11 +198,9 @@ const Projects = ({ limit }) => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.05 });
   const [selectedProject, setSelectedProject] = useState(null);
   const portfolioData = usePortfolioData();
+  const projects = portfolioData?.projects || [];
 
-  const currentProjects =
-    portfolioData?.projects && portfolioData.projects.length > 0
-      ? portfolioData.projects
-      : projects;
+  const currentProjects = projects && projects.length > 0 ? projects : projects;
 
   const openProjectDetails = (project) => {
     setSelectedProject(project);
@@ -214,7 +212,9 @@ const Projects = ({ limit }) => {
     document.body.style.overflow = "auto";
   };
 
-  const displayedProjects = limit ? currentProjects.slice(0, limit) : currentProjects;
+  const displayedProjects = limit
+    ? currentProjects.slice(0, limit)
+    : currentProjects;
 
   return (
     <div className="pt-6">
@@ -264,14 +264,14 @@ const Projects = ({ limit }) => {
                 {/* Media Container */}
                 <div className="relative h-44 overflow-hidden bg-gray-950 border-b border-gray-800/50">
                   <img
-                    src={project.image}
-                    alt={project.title}
+                    src={project.displayImage}
+                    alt={project.projectTitle}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="absolute inset-0 bg-[#0B0F19]/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
-                    {project.demoLink && (
+                    {project.liveLink && (
                       <a
-                        href={project.demoLink}
+                        href={project.liveLink}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-2.5 bg-gray-900 border border-gray-800 rounded-xl text-gray-400 hover:text-white hover:border-gray-600 transition-colors"
@@ -279,9 +279,9 @@ const Projects = ({ limit }) => {
                         <FiExternalLink size={16} />
                       </a>
                     )}
-                    {project.codeLink && project.codeLink !== "#" && (
+                    {project.repoLink && project.repoLink !== "#" && (
                       <a
-                        href={project.codeLink}
+                        href={project.repoLink}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-2.5 bg-gray-900 border border-gray-800 rounded-xl text-gray-400 hover:text-white hover:border-gray-600 transition-colors"
@@ -295,15 +295,15 @@ const Projects = ({ limit }) => {
                 {/* Card Meta Content */}
                 <div className="p-5 flex-1 flex flex-col">
                   <h3 className="text-base font-semibold text-white mb-2 group-hover:text-purple-400 transition-colors line-clamp-1">
-                    {project.title}
+                    {project.projectTitle}
                   </h3>
                   <p className="text-xs leading-relaxed text-gray-400 mb-4 line-clamp-2 flex-1">
-                    {project.description}
+                    {project.projectDescription}
                   </p>
 
                   {/* Grid Tech Stack Badges */}
                   <div className="flex flex-wrap gap-1.5 mb-4">
-                    {project.technologies.slice(0, 4).map((tech, idx) => (
+                    {(project.techStack ?? []).slice(0, 4).map((tech, idx) => (
                       <span
                         key={idx}
                         className={`px-2 py-0.5 text-[10px] font-mono font-medium text-gray-400 bg-gray-900/60 border border-gray-800/80 rounded transition-all duration-300 cursor-default select-none ${getTechStyle(tech)}`}

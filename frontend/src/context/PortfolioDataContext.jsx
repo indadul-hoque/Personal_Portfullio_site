@@ -1,72 +1,91 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { API_BASE_URL } from "../config";
 
+// ─── Context ──────────────────────────────────────────────────────────────────
 const PortfolioDataContext = createContext(null);
 
-const STORAGE_KEY = "portfolio_shared_data";
+// ─── Helper: generic fetch with abort signal ──────────────────────────────────
+const fetchResource = async (endpoint, signal) => {
+  const res = await fetch(`${API_BASE_URL}${endpoint}`, { signal });
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${endpoint}`);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || `Failed: ${endpoint}`);
+  return json.data;
+};
 
+// ─── Provider ─────────────────────────────────────────────────────────────────
 export const PortfolioDataProvider = ({ children }) => {
-  const [data, setData] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : null;
-    } catch {
-      return null;
-    }
-  });
+  // Separate state per resource — no overwrite risk, clean & scalable
+  const [profile, setProfile] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [educations, setEducations] = useState([]);
+  const [experiences, setExperiences] = useState([]);
+
+  // Shared loading & error state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const handleUpdate = () => {
+    const controller = new AbortController();
+    const { signal } = controller;
+
+    const fetchAll = async () => {
+      setLoading(true);
+      setError(null);
+
       try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          setData(JSON.parse(saved));
-        }
-      } catch (e) {
-        console.error("Error reading shared portfolio data", e);
+        // Fetch all resources in parallel — fastest approach
+        const [profileData, projectsData, educationsData, experiencesData] =
+          await Promise.all([
+            fetchResource("/profile", signal),
+            fetchResource("/projects", signal),
+            fetchResource("/educations", signal),
+            fetchResource("/experiences", signal),
+          ]);
+
+        setProfile(profileData);
+        setProjects(projectsData);
+        setEducations(educationsData);
+        setExperiences(experiencesData);
+      } catch (err) {
+        // Ignore abort errors (caused by StrictMode unmount / navigation)
+        if (err.name === "AbortError") return;
+        console.error("Portfolio data fetch failed:", err.message);
+        setError(err.message);
+      } finally {
+        setLoading(false);
       }
     };
 
-    window.addEventListener("storage", handleUpdate);
-    window.addEventListener("portfolio_data_updated", handleUpdate);
-    return () => {
-      window.removeEventListener("storage", handleUpdate);
-      window.removeEventListener("portfolio_data_updated", handleUpdate);
-    };
+    fetchAll();
+
+    // Cleanup: cancel all in-flight requests on unmount
+    return () => controller.abort();
   }, []);
 
-  // Fetch latest profile directly from backend API
-  useEffect(() => {
-    const fetchApiProfile = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/profile/get`);
-        if (res.ok) {
-          const result = await res.json();
-          if (result.success && result.data) {
-            setData((prev) => ({
-              ...(prev || {}),
-              profile: {
-                ...(prev?.profile || {}),
-                ...result.data,
-              },
-            }));
-          }
-        }
-      } catch (e) {
-        console.error("Failed to fetch profile from API", e);
-      }
-    };
-
-    fetchApiProfile();
-  }, []);
+  const contextValue = {
+    profile,
+    projects,
+    educations,
+    experiences,
+    loading,
+    error,
+  };
 
   return (
-    <PortfolioDataContext.Provider value={data}>
+    <PortfolioDataContext.Provider value={contextValue}>
       {children}
     </PortfolioDataContext.Provider>
   );
 };
 
+// ─── Hook ─────────────────────────────────────────────────────────────────────
 export const usePortfolioData = () => {
-  return useContext(PortfolioDataContext);
+  const context = useContext(PortfolioDataContext);
+  if (context === null) {
+    throw new Error(
+      "usePortfolioData must be used inside <PortfolioDataProvider>",
+    );
+  }
+  return context;
 };
