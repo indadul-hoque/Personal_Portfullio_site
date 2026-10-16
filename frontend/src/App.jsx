@@ -14,7 +14,8 @@ import Contact from "./components/Contact";
 import CustomCursor from "./components/CustomCursor";
 import Footer from "./components/Footer";
 import { PortfolioDataProvider } from "./context/PortfolioDataContext";
-
+import Blogs from "./components/Blogs";
+import BlogContent from "./components/BlogContent";
 // Separate the main landing page content to keep scrolling logic clean
 const MainLandingPage = () => {
   return (
@@ -46,6 +47,9 @@ function AppContent({ activeSection }) {
         <Route path="/projects" element={<Projects />} />
         <Route path="/experience" element={<Experience />} />
         <Route path="/education" element={<Education />} />
+        <Route path="/blogs" element={<Blogs />} />
+        <Route path="/blogs/:slug" element={<BlogContent />} />
+        <Route path="/blog/:slug" element={<BlogContent />} />
       </Routes>
     </Layout>
   );

@@ -8,6 +8,7 @@ import {
   FiSend,
   FiCheckCircle,
 } from "react-icons/fi";
+import { API_BASE_URL } from "../config";
 
 const Contact = () => {
   const [ref, inView] = useInView({
@@ -25,6 +26,7 @@ const Contact = () => {
   const [formStatus, setFormStatus] = useState({
     isSubmitting: false,
     isSubmitted: false,
+    isError: false,
   });
 
   const handleChange = (e) => {
@@ -32,17 +34,35 @@ const Contact = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setFormStatus({ isSubmitting: true, isSubmitted: false });
+    setFormStatus({ isSubmitting: true, isSubmitted: false, isError: false });
 
-    setTimeout(() => {
-      setFormStatus({ isSubmitting: false, isSubmitted: true });
+    try {
+      const res = await fetch(`${API_BASE_URL}/contact/me`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to send message.");
+      }
+
+      setFormStatus({ isSubmitting: false, isSubmitted: true, isError: false });
       setFormData({ name: "", email: "", subject: "", message: "" });
       setTimeout(() => {
         setFormStatus((prev) => ({ ...prev, isSubmitted: false }));
       }, 4000);
-    }, 1200);
+    } catch (error) {
+      console.error("Contact form error:", error.message);
+      setFormStatus({ isSubmitting: false, isSubmitted: false, isError: true });
+      setTimeout(() => {
+        setFormStatus((prev) => ({ ...prev, isError: false }));
+      }, 4000);
+    }
   };
 
   return (
@@ -97,6 +117,19 @@ const Contact = () => {
             <span>Message sent successfully! I'll reply soon.</span>
           </motion.div>
         )}
+
+        {/* Error Feedback Message */}
+        {formStatus.isError && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-3.5 bg-red-950/30 border border-red-500/20 text-red-400 rounded-xl flex items-center gap-2 text-xs font-mono"
+          >
+            <FiSend size={14} className="flex-shrink-0" />
+            <span>Failed to send message. Please try again.</span>
+          </motion.div>
+        )}
+
 
         {/* Simplified Input Form Fields */}
         <form onSubmit={handleSubmit} className="space-y-4">

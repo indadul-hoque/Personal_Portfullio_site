@@ -13,6 +13,7 @@ export const getContacts = async (
       res
         .status(401)
         .json({ message: "Contacts are not found.", success: false });
+      return;
     }
 
     res.status(200).json({
@@ -37,6 +38,7 @@ export const createContact = async (
       res
         .status(400)
         .json({ message: "All fields are required.", success: false });
+      return;
     }
 
     const contact = await prisma.contact.create({

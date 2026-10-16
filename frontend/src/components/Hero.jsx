@@ -4,69 +4,13 @@ import { motion } from "framer-motion";
 import Projects from "./Projects";
 import { usePortfolioData } from "../context/PortfolioDataContext";
 import { API_BASE_URL } from "../config";
-const defaultSkills = [
-  {
-    name: "JavaScript",
-    styles:
-      "hover:text-yellow-400 hover:border-yellow-500/30 hover:bg-yellow-950/20",
-  },
-  {
-    name: "TypeScript",
-    styles: "hover:text-blue-400 hover:border-blue-500/30 hover:bg-blue-950/30",
-  },
-  {
-    name: "ReactJS",
-    styles: "hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-950/30",
-  },
-  {
-    name: "Node.js",
-    styles:
-      "hover:text-emerald-400 hover:border-emerald-500/30 hover:bg-emerald-950/30",
-  },
-  {
-    name: "Express.js",
-    styles:
-      "hover:text-amber-400 hover:border-amber-500/30 hover:bg-amber-950/30",
-  },
-  {
-    name: "MongoDB",
-    styles:
-      "hover:text-green-400 hover:border-green-500/30 hover:bg-green-950/30",
-  },
-  {
-    name: "Next.js",
-    styles: "hover:text-white hover:border-gray-500/30 hover:bg-gray-800/40",
-  },
-  {
-    name: "TailwindCSS",
-    styles: "hover:text-sky-400 hover:border-sky-500/30 hover:bg-sky-950/30",
-  },
-  {
-    name: "RESTful APIs",
-    styles:
-      "hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-950/20",
-  },
-  {
-    name: "CI/CD",
-    styles:
-      "hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-950/20",
-  },
-  {
-    name: "Git",
-    styles:
-      "hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-950/20",
-  },
-];
+import { HeroSkeleton } from "./Skeletons";
 
 const getSkillStyle = (skillName) => {
   const lower = skillName.toLowerCase();
   if (lower.includes("javascript") || lower.includes("js"))
     return "hover:text-yellow-400 hover:border-yellow-500/30 hover:bg-yellow-950/20";
-  if (
-    lower.includes("typescript") ||
-    lower.includes("ts") ||
-    lower.includes("docker")
-  )
+  if (lower.includes("typescript") || lower.includes("ts") || lower.includes("docker"))
     return "hover:text-blue-400 hover:border-blue-500/30 hover:bg-blue-950/30";
   if (lower.includes("react"))
     return "hover:text-cyan-400 hover:border-cyan-500/30 hover:bg-cyan-950/30";
@@ -78,11 +22,7 @@ const getSkillStyle = (skillName) => {
     return "hover:text-sky-400 hover:border-sky-500/30 hover:bg-sky-950/30";
   if (lower.includes("next"))
     return "hover:text-white hover:border-gray-500/30 hover:bg-gray-800/40";
-  if (
-    lower.includes("prisma") ||
-    lower.includes("postgres") ||
-    lower.includes("sql")
-  )
+  if (lower.includes("prisma") || lower.includes("postgres") || lower.includes("sql"))
     return "hover:text-indigo-400 hover:border-indigo-500/30 hover:bg-indigo-950/30";
   if (lower.includes("git") || lower.includes("ci/cd"))
     return "hover:text-orange-400 hover:border-orange-500/30 hover:bg-orange-950/20";
@@ -90,19 +30,17 @@ const getSkillStyle = (skillName) => {
 };
 
 const Hero = () => {
-  const portfolioData = usePortfolioData();
-  const profile = portfolioData?.profile;
+  const { profile, loading } = usePortfolioData();
 
-  const skillsToRender =
-    profile?.skills && profile.skills.length > 0
-      ? profile.skills
-      : defaultSkills;
+  if (loading) return <HeroSkeleton />;
+
+  const skills = profile?.skills ?? [];
 
   const cvDownloadUrl = profile?.cvURL
     ? profile.cvURL.startsWith("http")
       ? profile.cvURL
       : `${API_BASE_URL}${profile.cvURL.startsWith("/") ? "" : "/"}${profile.cvURL}`
-    : "/Indadul_Hoque.pdf";
+    : null;
 
   return (
     <div className="space-y-6">
@@ -133,41 +71,38 @@ const Hero = () => {
                 )}
               </div>
               <p className="text-sm md:text-base leading-relaxed text-gray-400 whitespace-pre-line">
-                {profile?.bio ||
-                  "I'm a passionate MERN stack developer dedicated to creating innovative, clean, and scalable web solutions. I specialize in engineering highly responsive, user-friendly full-stack web applications built with structural integrity and reliable performance."}
+                {profile?.bio}
               </p>
             </div>
 
             {/* Profile Image Asset */}
             <div className="flex-shrink-0 order-1 sm:order-2">
               <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-2xl overflow-hidden border border-gray-800 bg-[#0F1626] p-1.5 shadow-inner">
-                <img
-                  src={profile?.photoURL || "/myimage.png"}
-                  alt={`${profile?.displayName || "Indadul Hoque"} portrait`}
-                  className="w-full h-full object-cover rounded-xl bg-gray-900 filter grayscale contrast-125 brightness-90 hover:grayscale-0 transition-all duration-500"
-                  onError={(e) => {
-                    e.currentTarget.src = "/myimage.png";
-                  }}
-                />
+                {profile?.photoURL && (
+                  <img
+                    src={profile.photoURL}
+                    alt={`${profile?.displayName ?? "Profile"} portrait`}
+                    className="w-full h-full object-cover rounded-xl bg-gray-900 filter grayscale contrast-125 brightness-90 hover:grayscale-0 transition-all duration-500"
+                  />
+                )}
               </div>
             </div>
           </div>
 
           {/* CV Button Tray */}
-          <div className="pt-4 border-t border-gray-800/40 flex items-center">
-            <a
-              href={cvDownloadUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800/60 text-gray-300 border border-gray-700/40 hover:text-orange-400 hover:bg-orange-950/20 font-medium text-xs transition-all duration-200"
-            >
-              <span>Preview & Download CV</span>
-              <Eye
-                size={14}
-                className="transition-transform group-hover:scale-105"
-              />
-            </a>
-          </div>
+          {cvDownloadUrl && (
+            <div className="pt-4 border-t border-gray-800/40 flex items-center">
+              <a
+                href={cvDownloadUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-800/60 text-gray-300 border border-gray-700/40 hover:text-orange-400 hover:bg-orange-950/20 font-medium text-xs transition-all duration-200"
+              >
+                <span>Preview & Download CV</span>
+                <Eye size={14} className="transition-transform group-hover:scale-105" />
+              </a>
+            </div>
+          )}
         </motion.section>
 
         {/* Card B: Core Skills Module Grid Card */}
@@ -189,15 +124,14 @@ const Hero = () => {
             </p>
           </div>
 
-          {/* Tight Layout Cluster Badges */}
+          {/* Skill Badges */}
           <div className="flex flex-wrap gap-2 relative z-10 flex-1 content-start mt-2">
-            {skillsToRender.map((skill) => {
+            {skills.map((skill) => {
               const name = typeof skill === "string" ? skill : skill.name;
               const style =
                 typeof skill === "object" && skill.styles
                   ? skill.styles
                   : getSkillStyle(name);
-
               return (
                 <span
                   key={name}
@@ -211,7 +145,7 @@ const Hero = () => {
         </motion.div>
       </div>
 
-      {/* ROW 2: Independent Sub-Grid Project Architecture */}
+      {/* ROW 2: Projects */}
       <div>
         <Projects limit={3} />
       </div>

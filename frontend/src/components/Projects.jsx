@@ -11,59 +11,7 @@ import {
   FiArrowUpRight,
 } from "react-icons/fi";
 
-const projects = [
-  {
-    id: 3,
-    title: "OCR-Based E-commerce Site",
-    description:
-      "An innovative e-commerce platform with OCR technology for product search and information extraction.",
-    image: "./listkaroHomePage.png",
-    technologies: ["React", "Node.js", "Express", "MongoDB", "Azure OCR"],
-    features: [
-      "OCR-powered product search from images",
-      "Full e-commerce functionality with cart and checkout",
-      "User authentication and profile management",
-      "Order tracking and history",
-    ],
-    demoLink: "https://list-karo.vercel.app/",
-    codeLink: "https://github.com/Hoqueindadul/ListKaro",
-  },
-  {
-    id: 2,
-    title: "Children Academic School Website",
-    description:
-      "A comprehensive school website featuring curriculum information, student portal, and administrative tools.",
-    image:
-      "https://images.pexels.com/photos/8471799/pexels-photo-8471799.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-    technologies: ["React", "Node.js", "Express", "MongoDB", "Bootstrap"],
-    features: [
-      "Interactive curriculum explorer",
-      "Student and teacher portals",
-      "Event calendar and announcements",
-      "Parent-teacher communication system",
-    ],
-    demoLink: "https://franchaisemodelformathguruabacus.vercel.app/",
-    codeLink:
-      "https://github.com/Hoqueindadul/franchaisemodelformathguruabacus",
-  },
-  {
-    id: 1,
-    title: "Restaurant Web App",
-    description:
-      "A full-stack restaurant web application with menu management, online ordering, and reservation system.",
-    image:
-      "https://images.pexels.com/photos/958545/pexels-photo-958545.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
-    technologies: ["React", "Node.js", "Express", "MongoDB", "Bootstrap"],
-    features: [
-      "Interactive menu with filtering options",
-      "Online ordering system with real-time updates",
-      "Table reservation functionality",
-      "Admin dashboard for menu and order management",
-    ],
-    demoLink: "https://restaurent-web-app-with-team.vercel.app/",
-    codeLink: "https://github.com/Hoqueindadul/RestaurentWebAppWithTeam",
-  },
-];
+
 
 const getTechStyle = (tech) => {
   const t = tech.toLowerCase();
@@ -193,14 +141,16 @@ const ProjectPortal = ({ selectedProject, closeProjectDetails }) => {
 
 // --- Main Projects Component ---
 import { usePortfolioData } from "../context/PortfolioDataContext";
+import { ProjectsSkeleton } from "./Skeletons";
 
 const Projects = ({ limit }) => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.05 });
   const [selectedProject, setSelectedProject] = useState(null);
-  const portfolioData = usePortfolioData();
-  const projects = portfolioData?.projects || [];
+  const { projects, loading } = usePortfolioData();
 
-  const currentProjects = projects && projects.length > 0 ? projects : projects;
+  if (loading) return <ProjectsSkeleton count={limit ?? 3} />;
+
+  const currentProjects = projects ?? [];
 
   const openProjectDetails = (project) => {
     setSelectedProject(project);

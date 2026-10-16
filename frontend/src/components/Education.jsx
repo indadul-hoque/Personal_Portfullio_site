@@ -1,66 +1,39 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
-import { FiCalendar, FiArrowUpRight } from "react-icons/fi";
-
-const educations = [
-  {
-    degree: "Bachelor of Computer Applications (BCA) (H)",
-    institution: "Maulana Abul Kalam Azad University of Technology",
-    year: "2022 - 2025",
-    description:
-      "Established a robust foundation in core computer science principles, database systems, and practical software engineering practices.",
-    current: false, // Updated to false as 2025 has passed
-  },
-  {
-    degree: "Master of Computer Applications (MCA)",
-    institution: "Swami Vivekananda University (Pursuing)",
-    year: "2025 - 2027",
-    description:
-      "Deepening expertise in advanced software engineering, database architecture, and full-stack development while actively building real-world applications.",
-    current: true,
-  },
-];
-
+import { FiCalendar } from "react-icons/fi";
 import { usePortfolioData } from "../context/PortfolioDataContext";
+import { EducationSkeleton } from "./Skeletons";
 
 // Maps API field names → component field names
 const normalizeEducation = (edu) => {
-  // If it's already in default shape, return as-is
-  if (edu.degree) return edu;
-
-  const startYear = edu.startDate
-    ? new Date(edu.startDate).getFullYear()
-    : null;
+  const startYear = edu.startDate ? new Date(edu.startDate).getFullYear() : null;
   const endYear = edu.endDate ? new Date(edu.endDate).getFullYear() : null;
   const isCurrentlyPursuing = !edu.endDate || new Date(edu.endDate) > new Date();
 
   return {
-    degree: edu.degreeName || "Degree",
-    institution: edu.institutionName || "Institution",
-    year: startYear && endYear ? `${startYear} - ${endYear}` : startYear || "N/A",
-    description: edu.description || (edu.fieldOfStudy ? `Field of Study: ${edu.fieldOfStudy}` : ""),
+    degree: edu.degreeName || edu.degree || "Degree",
+    institution: edu.institutionName || edu.institution || "Institution",
+    year:
+      edu.year ||
+      (startYear && endYear ? `${startYear} - ${endYear}` : startYear || "N/A"),
+    description:
+      edu.description ||
+      (edu.fieldOfStudy ? `Field of Study: ${edu.fieldOfStudy}` : ""),
     current: isCurrentlyPursuing,
   };
 };
 
 const Education = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.05 });
-  const { educations: apiEducations } = usePortfolioData();
+  const { educations: apiEducations, loading } = usePortfolioData();
 
-  // Use API data if available, otherwise fall back to default data
-  // Normalize API data to match component's expected shape
-  const currentEducations =
-    apiEducations && apiEducations.length > 0
-      ? apiEducations.map(normalizeEducation)
-      : educations;
+  if (loading) return <EducationSkeleton count={2} />;
+
+  const currentEducations = (apiEducations ?? []).map(normalizeEducation);
 
   return (
-    <section
-      id="education"
-      ref={ref}
-      className="py-6 bg-[#0B0F19] text-gray-300"
-    >
+    <section id="education" ref={ref} className="py-6 bg-[#0B0F19] text-gray-300">
       <div className="w-full max-w-5xl p-6 mx-auto border-2 border-gray-800/60 bg-[#0D1321]/40 backdrop-blur-sm rounded-2xl">
         {/* Section Header */}
         <div className="mb-8 flex items-center justify-between">
@@ -100,16 +73,14 @@ const Education = () => {
                     <h3 className="text-base font-semibold text-white group-hover:text-purple-400 transition-colors flex items-center gap-1.5">
                       {edu.degree}
                     </h3>
-                    <p className="text-sm text-gray-400 font-medium">
-                      {edu.institution}
-                    </p>
+                    <p className="text-sm text-gray-400 font-medium">{edu.institution}</p>
                   </div>
                 </div>
 
                 {/* Date Tag */}
                 <div className="flex items-center gap-1.5 text-[11px] font-mono font-medium text-purple-300 bg-purple-950/30 border border-purple-500/20 px-2.5 py-1 rounded-full sm:justify-end self-start sm:self-center backdrop-blur-sm shadow-sm select-none">
                   <FiCalendar size={12} className="text-purple-400" />
-                  <span>{edu.year || edu.date}</span>
+                  <span>{edu.year}</span>
                 </div>
               </div>
 

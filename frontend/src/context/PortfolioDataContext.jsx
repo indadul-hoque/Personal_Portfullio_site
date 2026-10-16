@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+} from "react";
 import { API_BASE_URL } from "../config";
 
 // ─── Context ──────────────────────────────────────────────────────────────────
@@ -13,17 +19,31 @@ const fetchResource = async (endpoint, signal) => {
   return json.data;
 };
 
+// ─── Helper: sleep that respects abort signal ─────────────────────────────────
+const sleep = (ms, signal) =>
+  new Promise((resolve, reject) => {
+    const id = setTimeout(resolve, ms);
+    signal.addEventListener("abort", () => {
+      clearTimeout(id);
+      reject(new DOMException("Aborted", "AbortError"));
+    });
+  });
+
+const MAX_RETRIES = 8;
+const BASE_DELAY_MS = 2000; // starts at 2 s, doubles each time, cap 10 s
+
 // ─── Provider ─────────────────────────────────────────────────────────────────
 export const PortfolioDataProvider = ({ children }) => {
-  // Separate state per resource — no overwrite risk, clean & scalable
   const [profile, setProfile] = useState(null);
   const [projects, setProjects] = useState([]);
   const [educations, setEducations] = useState([]);
   const [experiences, setExperiences] = useState([]);
 
-  // Shared loading & error state
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // track retry count for display (optional)
+  const retryCountRef = useRef(0);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -32,34 +52,61 @@ export const PortfolioDataProvider = ({ children }) => {
     const fetchAll = async () => {
       setLoading(true);
       setError(null);
+      retryCountRef.current = 0;
 
-      try {
-        // Fetch all resources in parallel — fastest approach
-        const [profileData, projectsData, educationsData, experiencesData] =
-          await Promise.all([
-            fetchResource("/profile", signal),
-            fetchResource("/projects", signal),
-            fetchResource("/educations", signal),
-            fetchResource("/experiences", signal),
-          ]);
+      while (retryCountRef.current <= MAX_RETRIES) {
+        try {
+          const [profileData, projectsData, educationsData, experiencesData] =
+            await Promise.all([
+              fetchResource("/profile", signal),
+              fetchResource("/projects", signal),
+              fetchResource("/educations", signal),
+              fetchResource("/experiences", signal),
+            ]);
 
-        setProfile(profileData);
-        setProjects(projectsData);
-        setEducations(educationsData);
-        setExperiences(experiencesData);
-      } catch (err) {
-        // Ignore abort errors (caused by StrictMode unmount / navigation)
-        if (err.name === "AbortError") return;
-        console.error("Portfolio data fetch failed:", err.message);
-        setError(err.message);
-      } finally {
-        setLoading(false);
+          setProfile(profileData);
+          setProjects(projectsData);
+          setEducations(educationsData);
+          setExperiences(experiencesData);
+          setLoading(false);
+          return;
+        } catch (err) {
+          if (err.name === "AbortError") return;
+
+          retryCountRef.current += 1;
+
+          if (retryCountRef.current > MAX_RETRIES) {
+            // All retries exhausted — stop skeleton, show error
+            console.error(
+              "Portfolio data fetch failed after max retries:",
+              err.message,
+            );
+            setError(err.message);
+            setLoading(false);
+            return;
+          }
+
+          // Exponential backoff: 2s, 4s, 8s … capped at 10s
+          const delay = Math.min(
+            BASE_DELAY_MS * 2 ** (retryCountRef.current - 1),
+            10_000,
+          );
+          console.warn(
+            `Portfolio fetch failed (attempt ${retryCountRef.current}/${MAX_RETRIES}). Retrying in ${delay / 1000}s…`,
+            err.message,
+          );
+
+          try {
+            await sleep(delay, signal); // wait before next attempt
+          } catch {
+            return; // aborted during sleep
+          }
+        }
       }
     };
 
     fetchAll();
 
-    // Cleanup: cancel all in-flight requests on unmount
     return () => controller.abort();
   }, []);
 

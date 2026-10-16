@@ -7,6 +7,7 @@ import { pinoHttp } from "pino-http";
 import { randomUUID } from "node:crypto";
 import { env, isProd } from "./config/env.js";
 import { logger } from "./lib/logger.js";
+import path from "node:path";
 // Application Routes
 import apiRoutes from "./routes/index.js";
 const app = express();
@@ -111,6 +112,9 @@ app.use(cookieParser());
 /* -------------------------------------------------------------------------- */
 /*                                 Routes                                     */
 /* -------------------------------------------------------------------------- */
+const uploadsDir = path.resolve(process.cwd(), "uploads");
+app.use("/uploads", express.static(uploadsDir));
+app.use("/api/uploads", express.static(uploadsDir));
 app.use("/api", apiRoutes);
 /* -------------------------------------------------------------------------- */
 /*                              Health checks                                 */

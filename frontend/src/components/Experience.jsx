@@ -3,67 +3,40 @@ import { motion } from "framer-motion";
 import { useInView } from "react-intersection-observer";
 import { FiCalendar, FiArrowUpRight } from "react-icons/fi";
 import { usePortfolioData } from "../context/PortfolioDataContext";
-
-const experiences = [
-  {
-    title: "Junior Full Stack Developer",
-    company: "GS3 Solution PVT.LTD",
-    duration: "6 mos",
-    date: "Jul 2025 - Dec 2025",
-    current: false,
-  },
-  {
-    title: "MERN Stack Intern",
-    company: "Ardent Computech PVT.LTD.",
-    duration: "3 mos",
-    date: "Feb 2025 - Apr 2025",
-    current: false,
-  },
-  {
-    title: "MERN Stack Intern",
-    company: "Ardent Computech PVT.LTD.",
-    duration: "1 mos",
-    date: "Jul 2024 - Aug 2024",
-    current: false,
-  },
-];
+import { ExperienceSkeleton } from "./Skeletons";
 
 // Maps API field names → component field names
 const normalizeExperience = (exp) => {
-  // If already in default shape, return as-is
-  if (exp.title) return exp;
-
   const start = exp.startDate ? new Date(exp.startDate) : null;
   const end = exp.endDate ? new Date(exp.endDate) : null;
   const isCurrentlyPursuing = !end || end > new Date();
 
-  // Format: "Jul 2024 - Aug 2024" style
   const fmt = (d) =>
     d ? d.toLocaleDateString("en-US", { month: "short", year: "numeric" }) : null;
-  const dateStr = start && end
-    ? `${fmt(start)} - ${isCurrentlyPursuing ? "Present" : fmt(end)}`
-    : fmt(start) || "N/A";
+  const dateStr =
+    start && end
+      ? `${fmt(start)} - ${isCurrentlyPursuing ? "Present" : fmt(end)}`
+      : fmt(start) || "N/A";
 
   return {
-    title: exp.jobTitle || "Job Title",
-    company: exp.companyName || "Company",
-    date: dateStr,           // ← template uses exp.date on line 117
-    duration: exp.employmentType || "",
+    title: exp.jobTitle || exp.title || "Job Title",
+    company: exp.companyName || exp.company || "Company",
+    date: exp.date || dateStr,
+    duration: exp.employmentType || exp.duration || "",
     current: isCurrentlyPursuing,
   };
 };
+
 const Experience = () => {
   const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.05 });
-  const { experiences: apiExperiences } = usePortfolioData();
+  const { experiences: apiExperiences, loading } = usePortfolioData();
 
-  // Use API data if available, otherwise fall back to default data
-  const currentExperiences =
-    apiExperiences && apiExperiences.length > 0
-      ? apiExperiences.map(normalizeExperience)
-      : experiences;
+  if (loading) return <ExperienceSkeleton count={3} />;
+
+  const currentExperiences = (apiExperiences ?? []).map(normalizeExperience);
 
   return (
-    <section id="experience" ref={ref} className=" bg-[#0B0F19] text-gray-300">
+    <section id="experience" ref={ref} className="bg-[#0B0F19] text-gray-300">
       <div className="w-full max-w-5xl p-6 mx-auto border-2 border-gray-800/60 bg-[#0D1321]/40 backdrop-blur-sm rounded-2xl">
         {/* Section Header */}
         <div className="mb-8 flex items-center justify-between">
@@ -106,9 +79,7 @@ const Experience = () => {
                       className="opacity-0 group-hover:opacity-100 text-purple-400 transition-all transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
                     />
                   </h3>
-                  <p className="text-sm text-gray-400 font-medium">
-                    {exp.company}
-                  </p>
+                  <p className="text-sm text-gray-400 font-medium">{exp.company}</p>
                 </div>
               </div>
 
@@ -118,7 +89,6 @@ const Experience = () => {
                   <FiCalendar size={13} className="text-gray-600" />
                   <span>{exp.date}</span>
                 </div>
-
                 {exp.duration && (
                   <span className="px-2 py-0.5 rounded bg-gray-900/60 border border-gray-800 text-gray-400 text-[11px]">
                     {exp.duration}

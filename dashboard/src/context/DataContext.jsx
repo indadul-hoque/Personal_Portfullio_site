@@ -387,6 +387,32 @@ export const DataProvider = ({ children }) => {
     }
   };
 
+  // ===================== FILE UPLOADS =====================
+  const uploadFile = async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const cleanBase = API_BASE_URL.endsWith("/")
+        ? API_BASE_URL.slice(0, -1)
+        : API_BASE_URL;
+      const res = await fetch(`${cleanBase}/upload`, {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data?.message || "Failed to upload file to server.");
+      }
+      return { success: true, data };
+    } catch (err) {
+      return {
+        success: false,
+        error: err.message || "Failed to upload file from device.",
+      };
+    }
+  };
+
   // ===================== PROJECTS =====================
   const addProject = async (project) => {
     const payload = {
@@ -691,6 +717,7 @@ export const DataProvider = ({ children }) => {
     profileLoading,
     refreshData,
     updateProfile,
+    uploadFile,
     addProject,
     updateProject,
     deleteProject,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   User,
   Mail,
@@ -13,11 +13,19 @@ import {
   Plus,
   X,
   ExternalLink,
+  Upload,
+  UploadCloud,
+  FileUp,
+  Image as ImageIcon,
+  Trash2,
+  Link as LinkIcon,
+  Check,
 } from "lucide-react";
+import toast from "react-hot-toast";
 import { useData } from "../context/DataContext";
 
 const ProfileManager = () => {
-  const { profile, updateProfile, profileLoading } = useData();
+  const { profile, updateProfile, uploadFile, profileLoading } = useData();
 
   const [formData, setFormData] = useState({
     id: profile?.id || "",
@@ -58,6 +66,147 @@ const ProfileManager = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+
+  const photoInputRef = useRef(null);
+  const cvInputRef = useRef(null);
+
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isUploadingCV, setIsUploadingCV] = useState(false);
+  const [photoDragActive, setPhotoDragActive] = useState(false);
+  const [cvDragActive, setCvDragActive] = useState(false);
+  const [photoSuccessMsg, setPhotoSuccessMsg] = useState("");
+  const [cvSuccessMsg, setCvSuccessMsg] = useState("");
+  const [showPhotoUrlInput, setShowPhotoUrlInput] = useState(false);
+  const [showCvUrlInput, setShowCvUrlInput] = useState(false);
+
+  const getFileNameFromUrl = (url) => {
+    if (!url) return "";
+    try {
+      const parts = url.split("/");
+      return decodeURIComponent(parts[parts.length - 1]);
+    } catch {
+      return url;
+    }
+  };
+
+  const handlePhotoFile = async (file) => {
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select a valid image file (PNG, JPG, WEBP, etc.)");
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("Image file size should be less than 15MB");
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    setPhotoSuccessMsg("");
+    try {
+      const res = await uploadFile(file);
+      if (res.success && res.data?.url) {
+        setFormData((prev) => ({
+          ...prev,
+          photoURL: res.data.url,
+        }));
+        setPhotoSuccessMsg("Photo uploaded successfully!");
+        toast.success("Photo uploaded from device!");
+        setTimeout(() => setPhotoSuccessMsg(""), 4000);
+      } else {
+        toast.error(res.error || "Failed to upload photo");
+      }
+    } catch (err) {
+      toast.error(err.message || "Failed to upload photo");
+    } finally {
+      setIsUploadingPhoto(false);
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  };
+
+  const handleCvFile = async (file) => {
+    if (!file) return;
+
+    const fileName = file.name.toLowerCase();
+    const isDoc =
+      fileName.endsWith(".pdf") ||
+      fileName.endsWith(".doc") ||
+      fileName.endsWith(".docx") ||
+      file.type.includes("pdf") ||
+      file.type.includes("word") ||
+      file.type.includes("document");
+
+    if (!isDoc) {
+      toast.error("Please select a valid CV document (.pdf, .doc, .docx)");
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("CV file size should be less than 15MB");
+      return;
+    }
+
+    setIsUploadingCV(true);
+    setCvSuccessMsg("");
+    try {
+      const res = await uploadFile(file);
+      if (res.success && res.data?.url) {
+        setFormData((prev) => ({
+          ...prev,
+          cvURL: res.data.url,
+        }));
+        setCvSuccessMsg("CV document uploaded successfully!");
+        toast.success("CV uploaded from device!");
+        setTimeout(() => setCvSuccessMsg(""), 4000);
+      } else {
+        toast.error(res.error || "Failed to upload CV");
+      }
+    } catch (err) {
+      toast.error(err.message || "Failed to upload CV");
+    } finally {
+      setIsUploadingCV(false);
+      if (cvInputRef.current) cvInputRef.current.value = "";
+    }
+  };
+
+  const handlePhotoDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setPhotoDragActive(true);
+    } else if (e.type === "dragleave") {
+      setPhotoDragActive(false);
+    }
+  };
+
+  const handlePhotoDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setPhotoDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handlePhotoFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleCvDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setCvDragActive(true);
+    } else if (e.type === "dragleave") {
+      setCvDragActive(false);
+    }
+  };
+
+  const handleCvDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setCvDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleCvFile(e.dataTransfer.files[0]);
+    }
+  };
 
   const handleAddSkill = (e) => {
     e?.preventDefault();
@@ -267,42 +416,289 @@ const ProfileManager = () => {
             </div>
           </div>
 
-          {/* Media & Resume URLs Card */}
-          <div className="p-6 rounded-2xl bg-[#0D1321]/70 border border-gray-800/80 space-y-4">
-            <h3 className="text-base font-bold text-white flex items-center gap-2 pb-2 border-b border-gray-800">
-              <FileText className="w-4 h-4 text-purple-400" />
-              Media & Documents
-            </h3>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Media & Resume Documents Card */}
+          <div className="p-6 rounded-2xl bg-[#0D1321]/70 border border-gray-800/80 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-gray-800 gap-2">
               <div>
-                <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider mb-1.5">
-                  Avatar Photo URL
-                </label>
-                <input
-                  type="text"
-                  value={formData.photoURL}
-                  onChange={(e) =>
-                    setFormData({ ...formData, photoURL: e.target.value })
-                  }
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full px-3.5 py-2.5 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
-                />
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-purple-400" />
+                  Image & Media Assets
+                </h3>
+                <p className="text-xs text-gray-400 font-mono mt-0.5">
+                  Upload your portrait photo and CV/Resume directly from your device
+                </p>
+              </div>
+              <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 self-start sm:self-auto">
+                Max 15MB each
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* ================= PHOTO UPLOAD PANEL ================= */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-gray-300 uppercase tracking-wider flex items-center gap-1.5 font-semibold">
+                    <ImageIcon className="w-3.5 h-3.5 text-purple-400" />
+                    Avatar / Profile Photo
+                  </label>
+                  {formData.photoURL && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, photoURL: "" })}
+                      className="text-[11px] font-mono text-rose-400 hover:text-rose-300 flex items-center gap-1 transition-colors"
+                      title="Remove current photo"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                {/* Dropzone & Preview Box */}
+                <div
+                  onDragEnter={handlePhotoDrag}
+                  onDragOver={handlePhotoDrag}
+                  onDragLeave={handlePhotoDrag}
+                  onDrop={handlePhotoDrop}
+                  onClick={() => !isUploadingPhoto && photoInputRef.current?.click()}
+                  className={`relative group rounded-2xl border-2 border-dashed transition-all p-5 flex flex-col items-center justify-center text-center cursor-pointer min-h-[190px] overflow-hidden ${
+                    photoDragActive
+                      ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20"
+                      : "border-gray-800 hover:border-purple-500/50 bg-[#0B0F19]/80 hover:bg-[#0E1526]"
+                  }`}
+                >
+                  <input
+                    type="file"
+                    ref={photoInputRef}
+                    accept="image/*"
+                    onChange={(e) => handlePhotoFile(e.target.files?.[0])}
+                    className="hidden"
+                  />
+
+                  {isUploadingPhoto ? (
+                    <div className="flex flex-col items-center gap-3 py-4">
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-full border-2 border-purple-500/30 border-t-purple-500 animate-spin" />
+                        <UploadCloud className="w-5 h-5 text-purple-400 absolute inset-0 m-auto" />
+                      </div>
+                      <span className="text-xs font-mono text-purple-300 font-medium">
+                        Uploading photo from device...
+                      </span>
+                    </div>
+                  ) : formData.photoURL ? (
+                    <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
+                      {/* Avatar preview */}
+                      <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-purple-500/50 flex-shrink-0 shadow-lg shadow-purple-500/10 bg-gray-900 group-hover:scale-105 transition-transform">
+                        <img
+                          src={formData.photoURL}
+                          alt="Avatar preview"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.src =
+                              "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80";
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                          <Upload className="w-5 h-5 text-white" />
+                        </div>
+                      </div>
+
+                      {/* Info & Replace Action */}
+                      <div className="flex-1 text-left space-y-1.5 min-w-0">
+                        <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-400">
+                          <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="font-semibold">Photo Selected</span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 font-mono truncate max-w-full">
+                          {getFileNameFromUrl(formData.photoURL)}
+                        </p>
+                        <span className="inline-flex items-center gap-1 text-[11px] text-purple-400 hover:text-purple-300 font-mono font-medium underline">
+                          <Upload className="w-3 h-3" /> Click to replace photo
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 py-2">
+                      <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform shadow-inner">
+                        <UploadCloud className="w-6 h-6" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-mono font-semibold text-gray-200">
+                          Click to upload or drag & drop photo
+                        </p>
+                        <p className="text-[11px] font-mono text-gray-500">
+                          PNG, JPG, WEBP, GIF or SVG (max 15MB)
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {photoSuccessMsg && (
+                    <div className="absolute bottom-2 left-2 right-2 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-mono py-1 px-2.5 rounded-lg flex items-center justify-center gap-1.5 animate-fade-in">
+                      <Check className="w-3 h-3" /> {photoSuccessMsg}
+                    </div>
+                  )}
+                </div>
+
+                {/* Optional Direct URL Toggle / Input */}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowPhotoUrlInput(!showPhotoUrlInput)}
+                    className="text-[11px] font-mono text-gray-400 hover:text-purple-400 flex items-center gap-1 transition-colors"
+                  >
+                    <LinkIcon className="w-3 h-3" />
+                    {showPhotoUrlInput ? "Hide Direct URL" : "Or enter / edit photo URL directly"}
+                  </button>
+
+                  {showPhotoUrlInput && (
+                    <div className="mt-2 animate-fade-in">
+                      <input
+                        type="text"
+                        value={formData.photoURL}
+                        onChange={(e) =>
+                          setFormData({ ...formData, photoURL: e.target.value })
+                        }
+                        placeholder="https://... or uploaded image URL"
+                        className="w-full px-3 py-2 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider mb-1.5">
-                  CV / Resume Link
-                </label>
-                <input
-                  type="text"
-                  value={formData.cvURL}
-                  onChange={(e) =>
-                    setFormData({ ...formData, cvURL: e.target.value })
-                  }
-                  placeholder="https://drive.google.com/... or pdf url"
-                  className="w-full px-3.5 py-2.5 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
-                />
+              {/* ================= CV / RESUME UPLOAD PANEL ================= */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono text-gray-300 uppercase tracking-wider flex items-center gap-1.5 font-semibold">
+                    <FileText className="w-3.5 h-3.5 text-purple-400" />
+                    CV / Resume Document
+                  </label>
+                  {formData.cvURL && (
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, cvURL: "" })}
+                      className="text-[11px] font-mono text-rose-400 hover:text-rose-300 flex items-center gap-1 transition-colors"
+                      title="Remove current CV"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                {/* Dropzone & Preview Box */}
+                <div
+                  onDragEnter={handleCvDrag}
+                  onDragOver={handleCvDrag}
+                  onDragLeave={handleCvDrag}
+                  onDrop={handleCvDrop}
+                  onClick={() => !isUploadingCV && cvInputRef.current?.click()}
+                  className={`relative group rounded-2xl border-2 border-dashed transition-all p-5 flex flex-col items-center justify-center text-center cursor-pointer min-h-[190px] overflow-hidden ${
+                    cvDragActive
+                      ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20"
+                      : "border-gray-800 hover:border-purple-500/50 bg-[#0B0F19]/80 hover:bg-[#0E1526]"
+                  }`}
+                >
+                  <input
+                    type="file"
+                    ref={cvInputRef}
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={(e) => handleCvFile(e.target.files?.[0])}
+                    className="hidden"
+                  />
+
+                  {isUploadingCV ? (
+                    <div className="flex flex-col items-center gap-3 py-4">
+                      <div className="relative">
+                        <div className="w-12 h-12 rounded-full border-2 border-purple-500/30 border-t-purple-500 animate-spin" />
+                        <FileUp className="w-5 h-5 text-purple-400 absolute inset-0 m-auto" />
+                      </div>
+                      <span className="text-xs font-mono text-purple-300 font-medium">
+                        Uploading CV document from device...
+                      </span>
+                    </div>
+                  ) : formData.cvURL ? (
+                    <div className="flex flex-col sm:flex-row items-center gap-4 w-full">
+                      {/* Document Icon Box */}
+                      <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500/20 to-indigo-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 flex-shrink-0 shadow-lg group-hover:scale-105 transition-transform">
+                        <FileText className="w-8 h-8" />
+                      </div>
+
+                      {/* File Info & Actions */}
+                      <div className="flex-1 text-left space-y-1.5 min-w-0">
+                        <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-400">
+                          <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="font-semibold">CV Ready</span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 font-mono truncate max-w-full">
+                          {getFileNameFromUrl(formData.cvURL)}
+                        </p>
+                        <div className="flex items-center gap-3 pt-1">
+                          <a
+                            href={formData.cvURL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex items-center gap-1 text-[11px] font-mono text-purple-300 hover:text-white px-2.5 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 transition-colors"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            Preview CV
+                          </a>
+                          <span className="text-[11px] text-gray-400 hover:text-purple-300 font-mono underline">
+                            Replace File
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 py-2">
+                      <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform shadow-inner">
+                        <FileUp className="w-6 h-6" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-mono font-semibold text-gray-200">
+                          Click to upload or drag & drop CV / Resume
+                        </p>
+                        <p className="text-[11px] font-mono text-gray-500">
+                          PDF, DOC, DOCX up to 15MB
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {cvSuccessMsg && (
+                    <div className="absolute bottom-2 left-2 right-2 bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-mono py-1 px-2.5 rounded-lg flex items-center justify-center gap-1.5 animate-fade-in">
+                      <Check className="w-3 h-3" /> {cvSuccessMsg}
+                    </div>
+                  )}
+                </div>
+
+                {/* Optional Direct CV Link Toggle / Input */}
+                <div className="pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowCvUrlInput(!showCvUrlInput)}
+                    className="text-[11px] font-mono text-gray-400 hover:text-purple-400 flex items-center gap-1 transition-colors"
+                  >
+                    <LinkIcon className="w-3 h-3" />
+                    {showCvUrlInput ? "Hide Direct Link" : "Or enter / edit CV link directly"}
+                  </button>
+
+                  {showCvUrlInput && (
+                    <div className="mt-2 animate-fade-in">
+                      <input
+                        type="text"
+                        value={formData.cvURL}
+                        onChange={(e) =>
+                          setFormData({ ...formData, cvURL: e.target.value })
+                        }
+                        placeholder="https://drive.google.com/... or pdf url"
+                        className="w-full px-3 py-2 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

@@ -95,6 +95,13 @@ export default function Navbar() {
             <FiBookOpen size={13} className="text-gray-500" />
             <span>Projects</span>
           </Link>
+          <Link
+            to="/blogs"
+            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-mono font-medium text-gray-400 hover:text-white rounded-lg transition-colors duration-200"
+          >
+            <FiBookOpen size={13} className="text-gray-500" />
+            <span>Blogs</span>
+          </Link>
         </div>
 
         {/* Desktop Social Profile Actions (Hidden on Mobile/Tablet viewports) */}
@@ -146,6 +153,14 @@ export default function Navbar() {
           >
             <FiLayers size={14} className="text-gray-500" />
             <span>Projects</span>
+          </Link>
+          <Link
+            to="/blogs"
+            onClick={(e) => handleNavClick(e, "blogs", true)}
+            className="flex items-center justify-center gap-2 w-full py-2.5 text-xs font-mono font-medium text-gray-400 hover:text-white bg-gray-950/30 border border-gray-800/40 rounded-xl transition-colors"
+          >
+            <FiBookOpen size={14} className="text-gray-500" />
+            <span>Blogs</span>
           </Link>
 
           <button
