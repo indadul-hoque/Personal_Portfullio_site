@@ -22,10 +22,53 @@ import {
   Check,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { API_BASE_URL } from "../../config";
 import { useData } from "../context/DataContext";
 
+// Validation constants matching backend fileUpload.middleware.ts & profile.contorler.ts
+const MAX_PHOTO_MB = 5;
+const MAX_CV_MB = 15;
+const PHOTO_TYPES = ["image/jpeg", "image/png", "image/jpg"];
+const CV_EXTENSIONS = [".pdf"];
+const CV_MIME_TYPES = ["application/pdf"];
+
+// Defensive normalizers to ensure skills and socialLinks conform to expected structures
+const normalizeSkills = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
+const normalizeSocialLinks = (raw) => {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "object") {
+    return Object.entries(raw).map(([platform, url]) => ({
+      platform,
+      url: String(url),
+    }));
+  }
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return normalizeSocialLinks(parsed);
+    } catch {
+      return [];
+    }
+  }
+  return [];
+};
+
 const ProfileManager = () => {
-  const { profile, updateProfile, uploadFile, profileLoading } = useData();
+  const { profile, updateProfile, profileLoading } = useData();
 
   const [formData, setFormData] = useState({
     id: profile?.id || "",
@@ -37,27 +80,31 @@ const ProfileManager = () => {
     bio: profile?.bio || "",
     photoURL: profile?.photoURL || "",
     cvURL: profile?.cvURL || "",
-    skills: profile?.skills ? [...profile.skills] : [],
-    socialLinks: profile?.socialLinks ? [...profile.socialLinks] : [],
+    skills: normalizeSkills(profile?.skills),
+    socialLinks: normalizeSocialLinks(profile?.socialLinks),
+    photoFile: undefined,
+    cvFile: undefined,
+    cvFileName: "",
   });
 
-  // Sync formData whenever profile data updates or loads from the API
+  // Preserve local File objects when profile syncs from backend API
   useEffect(() => {
-    if (profile) {
-      setFormData({
-        id: profile.id || "",
-        displayName: profile.displayName || "",
-        roleTitle: profile.roleTitle || "",
-        email: profile.email || "",
-        phone: profile.phone || "",
-        address: profile.address || "",
-        bio: profile.bio || "",
-        photoURL: profile.photoURL || "",
-        cvURL: profile.cvURL || "",
-        skills: profile.skills ? [...profile.skills] : [],
-        socialLinks: profile.socialLinks ? [...profile.socialLinks] : [],
-      });
-    }
+    if (!profile) return;
+    setFormData((prev) => ({
+      ...prev,
+      id: profile.id || prev.id || "",
+      displayName: profile.displayName || "",
+      roleTitle: profile.roleTitle || prev.roleTitle || "",
+      email: profile.email || "",
+      phone: profile.phone || "",
+      address: profile.address || "",
+      bio: profile.bio || "",
+      // Only overwrite URLs if no local file is selected — preserve local preview
+      photoURL: prev.photoFile ? prev.photoURL : (profile.photoURL || ""),
+      cvURL: prev.cvFile ? prev.cvURL : (profile.cvURL || ""),
+      skills: normalizeSkills(profile.skills),
+      socialLinks: normalizeSocialLinks(profile.socialLinks),
+    }));
   }, [profile]);
 
   const [skillInput, setSkillInput] = useState("");
@@ -70,8 +117,10 @@ const ProfileManager = () => {
   const photoInputRef = useRef(null);
   const cvInputRef = useRef(null);
 
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
-  const [isUploadingCV, setIsUploadingCV] = useState(false);
+  // BUG 1: derived instead of state — no spinner state variables needed
+  const isUploadingPhoto = isSaving && !!formData.photoFile;
+  const isUploadingCV = isSaving && !!formData.cvFile;
+
   const [photoDragActive, setPhotoDragActive] = useState(false);
   const [cvDragActive, setCvDragActive] = useState(false);
   const [photoSuccessMsg, setPhotoSuccessMsg] = useState("");
@@ -79,95 +128,90 @@ const ProfileManager = () => {
   const [showPhotoUrlInput, setShowPhotoUrlInput] = useState(false);
   const [showCvUrlInput, setShowCvUrlInput] = useState(false);
 
+  const resolveAssetUrl = (url) => {
+    if (!url) return "";
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("blob:") ||
+      url.startsWith("data:")
+    ) {
+      return url;
+    }
+    const cleanBase = API_BASE_URL.replace(/\/api\/?$/, "");
+    return `${cleanBase}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+
+  // BUG 5: strip query strings from Cloudinary URLs before displaying filename
   const getFileNameFromUrl = (url) => {
     if (!url) return "";
     try {
-      const parts = url.split("/");
-      return decodeURIComponent(parts[parts.length - 1]);
+      const last = url.split("/").pop()?.split("?")[0] ?? "";
+      return decodeURIComponent(last);
     } catch {
       return url;
     }
   };
 
-  const handlePhotoFile = async (file) => {
+  // BUG 6: use centralized constants for validation
+  const handlePhotoFile = (file) => {
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select a valid image file (PNG, JPG, WEBP, etc.)");
+    if (!PHOTO_TYPES.includes(file.type)) {
+      toast.error(
+        `Please select a valid image file (${PHOTO_TYPES.map((t) => t.split("/")[1].toUpperCase()).join(", ")})`,
+      );
       return;
     }
 
-    if (file.size > 15 * 1024 * 1024) {
-      toast.error("Image file size should be less than 15MB");
+    if (file.size > MAX_PHOTO_MB * 1024 * 1024) {
+      toast.error(`Profile photo must be under ${MAX_PHOTO_MB}MB`);
       return;
     }
 
-    setIsUploadingPhoto(true);
-    setPhotoSuccessMsg("");
-    try {
-      const res = await uploadFile(file);
-      if (res.success && res.data?.url) {
-        setFormData((prev) => ({
-          ...prev,
-          photoURL: res.data.url,
-        }));
-        setPhotoSuccessMsg("Photo uploaded successfully!");
-        toast.success("Photo uploaded from device!");
-        setTimeout(() => setPhotoSuccessMsg(""), 4000);
-      } else {
-        toast.error(res.error || "Failed to upload photo");
-      }
-    } catch (err) {
-      toast.error(err.message || "Failed to upload photo");
-    } finally {
-      setIsUploadingPhoto(false);
-      if (photoInputRef.current) photoInputRef.current.value = "";
-    }
+    const previewUrl = URL.createObjectURL(file);
+    setFormData((prev) => ({
+      ...prev,
+      photoFile: file,
+      photoURL: previewUrl,
+    }));
+    setPhotoSuccessMsg("Photo selected! Click 'Save Changes' to upload.");
+    toast.success("Photo selected from device!");
+    setTimeout(() => setPhotoSuccessMsg(""), 4000);
+    if (photoInputRef.current) photoInputRef.current.value = "";
   };
 
-  const handleCvFile = async (file) => {
+  // BUG 6: use centralized constants, check MIME type not just extension
+  const handleCvFile = (file) => {
     if (!file) return;
 
-    const fileName = file.name.toLowerCase();
-    const isDoc =
-      fileName.endsWith(".pdf") ||
-      fileName.endsWith(".doc") ||
-      fileName.endsWith(".docx") ||
-      file.type.includes("pdf") ||
-      file.type.includes("word") ||
-      file.type.includes("document");
+    const ext = "." + file.name.split(".").pop().toLowerCase();
+    const isExtValid = CV_EXTENSIONS.includes(ext);
+    const isMimeValid = CV_MIME_TYPES.includes(file.type);
 
-    if (!isDoc) {
-      toast.error("Please select a valid CV document (.pdf, .doc, .docx)");
+    if (!isExtValid || !isMimeValid) {
+      toast.error(
+        `Please select a valid CV document (${CV_EXTENSIONS.join(", ")})`,
+      );
       return;
     }
 
-    if (file.size > 15 * 1024 * 1024) {
-      toast.error("CV file size should be less than 15MB");
+    if (file.size > MAX_CV_MB * 1024 * 1024) {
+      toast.error(`CV file must be under ${MAX_CV_MB}MB`);
       return;
     }
 
-    setIsUploadingCV(true);
-    setCvSuccessMsg("");
-    try {
-      const res = await uploadFile(file);
-      if (res.success && res.data?.url) {
-        setFormData((prev) => ({
-          ...prev,
-          cvURL: res.data.url,
-        }));
-        setCvSuccessMsg("CV document uploaded successfully!");
-        toast.success("CV uploaded from device!");
-        setTimeout(() => setCvSuccessMsg(""), 4000);
-      } else {
-        toast.error(res.error || "Failed to upload CV");
-      }
-    } catch (err) {
-      toast.error(err.message || "Failed to upload CV");
-    } finally {
-      setIsUploadingCV(false);
-      if (cvInputRef.current) cvInputRef.current.value = "";
-    }
+    const previewUrl = URL.createObjectURL(file);
+    setFormData((prev) => ({
+      ...prev,
+      cvFile: file,
+      cvURL: previewUrl,
+      cvFileName: file.name,
+    }));
+    setCvSuccessMsg(`CV selected: ${file.name}! Click 'Save Changes' to upload.`);
+    toast.success("CV document selected!");
+    setTimeout(() => setCvSuccessMsg(""), 4000);
+    if (cvInputRef.current) cvInputRef.current.value = "";
   };
 
   const handlePhotoDrag = (e) => {
@@ -248,21 +292,57 @@ const ProfileManager = () => {
     });
   };
 
+  const isCreating = !formData.id && !profile?.id;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
     setErrorMessage(null);
     setSavedSuccess(false);
 
+    // Validate 5 required fields matching backend profile.contorler.ts REQUIRED_FIELDS
+    if (
+      !formData.displayName?.trim() ||
+      !formData.email?.trim() ||
+      !formData.phone?.trim() ||
+      !formData.address?.trim() ||
+      !formData.bio?.trim()
+    ) {
+      setErrorMessage(
+        "Missing required fields: Display Name, Email, Phone, Location, and Bio are strictly required by the backend API.",
+      );
+      setIsSaving(false);
+      return;
+    }
+
+    // When creating a new profile (no existing ID in DB), profile.contorler.ts strictly requires both photo and cv files
+    if (isCreating && (!formData.photoFile || !formData.cvFile)) {
+      setErrorMessage(
+        "Both 'photo' and 'cv' files must be selected from your device when creating your profile for the first time.",
+      );
+      setIsSaving(false);
+      return;
+    }
+
     try {
       const res = await updateProfile(formData);
       if (res && res.success === false) {
-        setErrorMessage(
-          res.error || "Failed to update profile via backend API",
-        );
+        setErrorMessage(res.error || "Failed to update profile via backend API");
       } else {
         setSavedSuccess(true);
         setTimeout(() => setSavedSuccess(false), 4000);
+
+        // Update local state with the returned profile from database
+        setFormData((prev) => ({
+          ...prev,
+          id: res?.data?.id || prev.id,
+          photoFile: undefined,
+          cvFile: undefined,
+          cvFileName: "",
+          // Replace local blob: preview with the persisted Cloudinary URL from server
+          photoURL: res?.data?.photoURL || prev.photoURL,
+          cvURL: res?.data?.cvURL || prev.cvURL,
+        }));
       }
     } catch (err) {
       setErrorMessage(
@@ -340,11 +420,10 @@ const ProfileManager = () => {
 
               <div>
                 <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider mb-1.5">
-                  Role / Headline *
+                  Role / Headline
                 </label>
                 <input
                   type="text"
-                  required
                   value={formData.roleTitle}
                   onChange={(e) =>
                     setFormData({ ...formData, roleTitle: e.target.value })
@@ -372,44 +451,50 @@ const ProfileManager = () => {
               />
             </div>
 
-            {/* Contact Details */}
+            {/* Contact Details (required by backend) */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
               <div>
                 <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider mb-1.5">
-                  Email
+                  Email *
                 </label>
                 <input
                   type="email"
+                  required
                   value={formData.email}
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
+                  placeholder="e.g. name@example.com"
                   className="w-full px-3.5 py-2 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
                 />
               </div>
               <div>
                 <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider mb-1.5">
-                  Phone
+                  Phone *
                 </label>
                 <input
                   type="text"
+                  required
                   value={formData.phone}
                   onChange={(e) =>
                     setFormData({ ...formData, phone: e.target.value })
                   }
+                  placeholder="e.g. +91 98765 43210"
                   className="w-full px-3.5 py-2 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
                 />
               </div>
               <div>
                 <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider mb-1.5">
-                  Location / City
+                  Location / City *
                 </label>
                 <input
                   type="text"
+                  required
                   value={formData.address}
                   onChange={(e) =>
                     setFormData({ ...formData, address: e.target.value })
                   }
+                  placeholder="e.g. Kolkata, India"
                   className="w-full px-3.5 py-2 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
                 />
               </div>
@@ -425,12 +510,20 @@ const ProfileManager = () => {
                   Image & Media Assets
                 </h3>
                 <p className="text-xs text-gray-400 font-mono mt-0.5">
-                  Upload your portrait photo and CV/Resume directly from your device
+                  Upload your portrait photo and CV/Resume directly from your
+                  device
                 </p>
               </div>
-              <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20 self-start sm:self-auto">
-                Max 15MB each
-              </span>
+              <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+                {isCreating && (
+                  <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30 font-semibold">
+                    * Both files required for new profile
+                  </span>
+                )}
+                <span className="text-[11px] font-mono px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                  Photo ≤ {MAX_PHOTO_MB}MB · CV ≤ {MAX_CV_MB}MB
+                </span>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -444,7 +537,13 @@ const ProfileManager = () => {
                   {formData.photoURL && (
                     <button
                       type="button"
-                      onClick={() => setFormData({ ...formData, photoURL: "" })}
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          photoURL: "",
+                          photoFile: undefined,
+                        }))
+                      }
                       className="text-[11px] font-mono text-rose-400 hover:text-rose-300 flex items-center gap-1 transition-colors"
                       title="Remove current photo"
                     >
@@ -460,7 +559,9 @@ const ProfileManager = () => {
                   onDragOver={handlePhotoDrag}
                   onDragLeave={handlePhotoDrag}
                   onDrop={handlePhotoDrop}
-                  onClick={() => !isUploadingPhoto && photoInputRef.current?.click()}
+                  onClick={() =>
+                    !isUploadingPhoto && photoInputRef.current?.click()
+                  }
                   className={`relative group rounded-2xl border-2 border-dashed transition-all p-5 flex flex-col items-center justify-center text-center cursor-pointer min-h-[190px] overflow-hidden ${
                     photoDragActive
                       ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20"
@@ -470,7 +571,7 @@ const ProfileManager = () => {
                   <input
                     type="file"
                     ref={photoInputRef}
-                    accept="image/*"
+                    accept={PHOTO_TYPES.map((t) => t).join(",")}
                     onChange={(e) => handlePhotoFile(e.target.files?.[0])}
                     className="hidden"
                   />
@@ -482,7 +583,7 @@ const ProfileManager = () => {
                         <UploadCloud className="w-5 h-5 text-purple-400 absolute inset-0 m-auto" />
                       </div>
                       <span className="text-xs font-mono text-purple-300 font-medium">
-                        Uploading photo from device...
+                        Uploading photo to Cloudinary...
                       </span>
                     </div>
                   ) : formData.photoURL ? (
@@ -490,7 +591,7 @@ const ProfileManager = () => {
                       {/* Avatar preview */}
                       <div className="relative w-20 h-20 rounded-2xl overflow-hidden border-2 border-purple-500/50 flex-shrink-0 shadow-lg shadow-purple-500/10 bg-gray-900 group-hover:scale-105 transition-transform">
                         <img
-                          src={formData.photoURL}
+                          src={resolveAssetUrl(formData.photoURL)}
                           alt="Avatar preview"
                           className="w-full h-full object-cover"
                           onError={(e) => {
@@ -507,7 +608,9 @@ const ProfileManager = () => {
                       <div className="flex-1 text-left space-y-1.5 min-w-0">
                         <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-400">
                           <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span className="font-semibold">Photo Selected</span>
+                          <span className="font-semibold">
+                            {formData.photoFile ? "Photo Selected (not yet saved)" : "Photo Active"}
+                          </span>
                         </div>
                         <p className="text-[11px] text-gray-400 font-mono truncate max-w-full">
                           {getFileNameFromUrl(formData.photoURL)}
@@ -527,7 +630,7 @@ const ProfileManager = () => {
                           Click to upload or drag & drop photo
                         </p>
                         <p className="text-[11px] font-mono text-gray-500">
-                          PNG, JPG, WEBP, GIF or SVG (max 15MB)
+                          PNG, JPG, JPEG (max {MAX_PHOTO_MB}MB)
                         </p>
                       </div>
                     </div>
@@ -548,7 +651,9 @@ const ProfileManager = () => {
                     className="text-[11px] font-mono text-gray-400 hover:text-purple-400 flex items-center gap-1 transition-colors"
                   >
                     <LinkIcon className="w-3 h-3" />
-                    {showPhotoUrlInput ? "Hide Direct URL" : "Or enter / edit photo URL directly"}
+                    {showPhotoUrlInput
+                      ? "Hide Direct URL"
+                      : "Or enter / edit photo URL directly"}
                   </button>
 
                   {showPhotoUrlInput && (
@@ -557,7 +662,11 @@ const ProfileManager = () => {
                         type="text"
                         value={formData.photoURL}
                         onChange={(e) =>
-                          setFormData({ ...formData, photoURL: e.target.value })
+                          setFormData((prev) => ({
+                            ...prev,
+                            photoURL: e.target.value,
+                            photoFile: undefined,
+                          }))
                         }
                         placeholder="https://... or uploaded image URL"
                         className="w-full px-3 py-2 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
@@ -577,7 +686,14 @@ const ProfileManager = () => {
                   {formData.cvURL && (
                     <button
                       type="button"
-                      onClick={() => setFormData({ ...formData, cvURL: "" })}
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          cvURL: "",
+                          cvFile: undefined,
+                          cvFileName: "",
+                        }))
+                      }
                       className="text-[11px] font-mono text-rose-400 hover:text-rose-300 flex items-center gap-1 transition-colors"
                       title="Remove current CV"
                     >
@@ -603,7 +719,7 @@ const ProfileManager = () => {
                   <input
                     type="file"
                     ref={cvInputRef}
-                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    accept={[...CV_EXTENSIONS, ...CV_MIME_TYPES].join(",")}
                     onChange={(e) => handleCvFile(e.target.files?.[0])}
                     className="hidden"
                   />
@@ -615,7 +731,7 @@ const ProfileManager = () => {
                         <FileUp className="w-5 h-5 text-purple-400 absolute inset-0 m-auto" />
                       </div>
                       <span className="text-xs font-mono text-purple-300 font-medium">
-                        Uploading CV document from device...
+                        Uploading CV to Cloudinary...
                       </span>
                     </div>
                   ) : formData.cvURL ? (
@@ -629,14 +745,17 @@ const ProfileManager = () => {
                       <div className="flex-1 text-left space-y-1.5 min-w-0">
                         <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-400">
                           <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span className="font-semibold">CV Ready</span>
+                          <span className="font-semibold">
+                            {formData.cvFile ? "CV Selected (not yet saved)" : "CV Ready"}
+                          </span>
                         </div>
                         <p className="text-[11px] text-gray-400 font-mono truncate max-w-full">
-                          {getFileNameFromUrl(formData.cvURL)}
+                          {formData.cvFileName || getFileNameFromUrl(formData.cvURL)}
                         </p>
                         <div className="flex items-center gap-3 pt-1">
+                          {/* BUG 4: use resolveAssetUrl in live preview CV link */}
                           <a
-                            href={formData.cvURL}
+                            href={resolveAssetUrl(formData.cvURL)}
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={(e) => e.stopPropagation()}
@@ -661,7 +780,7 @@ const ProfileManager = () => {
                           Click to upload or drag & drop CV / Resume
                         </p>
                         <p className="text-[11px] font-mono text-gray-500">
-                          PDF, DOC, DOCX up to 15MB
+                          PDF only (max {MAX_CV_MB}MB)
                         </p>
                       </div>
                     </div>
@@ -682,7 +801,9 @@ const ProfileManager = () => {
                     className="text-[11px] font-mono text-gray-400 hover:text-purple-400 flex items-center gap-1 transition-colors"
                   >
                     <LinkIcon className="w-3 h-3" />
-                    {showCvUrlInput ? "Hide Direct Link" : "Or enter / edit CV link directly"}
+                    {showCvUrlInput
+                      ? "Hide Direct Link"
+                      : "Or enter / edit CV link directly"}
                   </button>
 
                   {showCvUrlInput && (
@@ -691,7 +812,12 @@ const ProfileManager = () => {
                         type="text"
                         value={formData.cvURL}
                         onChange={(e) =>
-                          setFormData({ ...formData, cvURL: e.target.value })
+                          setFormData((prev) => ({
+                            ...prev,
+                            cvURL: e.target.value,
+                            cvFile: undefined,
+                            cvFileName: "",
+                          }))
                         }
                         placeholder="https://drive.google.com/... or pdf url"
                         className="w-full px-3 py-2 bg-[#0B0F19] border border-gray-800 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
@@ -826,7 +952,11 @@ const ProfileManager = () => {
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                <span>Save Profile & Update Portfolio</span>
+                <span>
+                  {isCreating
+                    ? "Create Profile & Save to Database"
+                    : "Save Profile & Update Portfolio"}
+                </span>
               </>
             )}
           </button>
@@ -847,7 +977,7 @@ const ProfileManager = () => {
                 <div className="w-16 h-16 rounded-2xl bg-gray-800 overflow-hidden border-2 border-purple-500/40 flex-shrink-0 shadow-md">
                   <img
                     src={
-                      formData.photoURL ||
+                      resolveAssetUrl(formData.photoURL) ||
                       "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"
                     }
                     alt="Preview"
@@ -898,11 +1028,11 @@ const ProfileManager = () => {
                 </div>
               </div>
 
-              {/* CV Button */}
+              {/* CV Button — BUG 4: resolveAssetUrl in preview */}
               {formData.cvURL && (
                 <div className="pt-2">
                   <a
-                    href={formData.cvURL}
+                    href={resolveAssetUrl(formData.cvURL)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full inline-flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 text-xs font-mono border border-purple-500/30 transition-all"

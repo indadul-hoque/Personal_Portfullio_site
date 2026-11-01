@@ -8,7 +8,6 @@ import { randomUUID } from "node:crypto";
 
 import { env, isProd } from "./config/env.js";
 import { logger } from "./lib/logger.js";
-
 import path from "node:path";
 
 // Application Routes
@@ -65,7 +64,7 @@ const devOrigins = [
 const prodOrigins = [
   env.PROD_MAIN_SITE_ORIGIN,
   env.PROD_DASHBOARD_ORIGIN,
-  ...(env.EXTRA_ALLOWED_ORIGINS?.split(",").map((o) => o.trim()) ?? []),
+  ...(env.EXTRA_ALLOWED_ORIGINS?.split(",").map((o: string) => o.trim()) ?? []),
 ];
 
 const rawOrigins = isProd ? prodOrigins : devOrigins;
@@ -140,11 +139,15 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(cookieParser());
 
 /* -------------------------------------------------------------------------- */
-/*                                 Routes                                     */
+/*                                 Static Files                               */
 /* -------------------------------------------------------------------------- */
 const uploadsDir = path.resolve(process.cwd(), "uploads");
 app.use("/uploads", express.static(uploadsDir));
 app.use("/api/uploads", express.static(uploadsDir));
+
+/* -------------------------------------------------------------------------- */
+/*                                 Routes                                     */
+/* -------------------------------------------------------------------------- */
 
 app.use("/api", apiRoutes);
 

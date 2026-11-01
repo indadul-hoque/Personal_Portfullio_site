@@ -110,11 +110,14 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(cookieParser());
 /* -------------------------------------------------------------------------- */
-/*                                 Routes                                     */
+/*                                 Static Files                               */
 /* -------------------------------------------------------------------------- */
 const uploadsDir = path.resolve(process.cwd(), "uploads");
 app.use("/uploads", express.static(uploadsDir));
 app.use("/api/uploads", express.static(uploadsDir));
+/* -------------------------------------------------------------------------- */
+/*                                 Routes                                     */
+/* -------------------------------------------------------------------------- */
 app.use("/api", apiRoutes);
 /* -------------------------------------------------------------------------- */
 /*                              Health checks                                 */

@@ -1,3 +1,3 @@
 import type { Request, Response } from "express";
-export declare const uploadFile: (req: Request, res: Response) => void;
+export declare const uploadImage: (req: Request, res: Response) => Promise<void>;
 //# sourceMappingURL=upload.controler.d.ts.map

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Plus,
   Search,
@@ -8,13 +8,19 @@ import {
   Trash2,
   X,
   FolderGit2,
+  UploadCloud,
+  Image as ImageIcon,
+  Link as LinkIcon,
 } from "lucide-react";
+import toast from "react-hot-toast";
+import { API_BASE_URL } from "../../config";
 import { useData } from "../context/DataContext";
 
 const defaultProjectState = {
   projectTitle: "",
   projectDescription: "",
   displayImage: "",
+  displayImageFile: null,
   techStack: [],
   projectFeatures: [],
   liveLink: "",
@@ -31,6 +37,62 @@ const ProjectsManager = () => {
 
   const [techInput, setTechInput] = useState("");
   const [featureInput, setFeatureInput] = useState("");
+  const [imageDragActive, setImageDragActive] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const resolveAssetUrl = (url) => {
+    if (!url) return "";
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("blob:") ||
+      url.startsWith("data:")
+    ) {
+      return url;
+    }
+    const cleanBase = API_BASE_URL.replace(/\/api\/?$/, "");
+    return `${cleanBase}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+
+  const handleImageFile = (file) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file (PNG, JPG, WEBP, etc.)");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image file size should be less than 2MB");
+      return;
+    }
+    const preview = URL.createObjectURL(file);
+    setFormData((prev) => ({
+      ...prev,
+      displayImageFile: file,
+      displayImage: preview,
+    }));
+    toast.success("Image selected from device!");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setImageDragActive(true);
+    } else if (e.type === "dragleave") {
+      setImageDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImageDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleImageFile(e.dataTransfer.files[0]);
+    }
+  };
 
   const filteredProjects = projects.filter((p) => {
     const q = searchQuery.toLowerCase();
@@ -55,6 +117,7 @@ const ProjectsManager = () => {
       projectTitle: project.projectTitle || "",
       projectDescription: project.projectDescription || "",
       displayImage: project.displayImage || "",
+      displayImageFile: null,
       techStack: project.techStack ? [...project.techStack] : [],
       projectFeatures: project.projectFeatures
         ? [...project.projectFeatures]
@@ -62,6 +125,7 @@ const ProjectsManager = () => {
       liveLink: project.liveLink || "",
       repoLink: project.repoLink || "",
     });
+    setShowUrlInput(false);
     setTechInput("");
     setFeatureInput("");
     setModalOpen(true);
@@ -173,7 +237,7 @@ const ProjectsManager = () => {
                 <div className="relative h-44 w-full bg-gray-900 overflow-hidden border-b border-gray-800">
                   <img
                     src={
-                      project.displayImage ||
+                      resolveAssetUrl(project.displayImage) ||
                       "https://images.unsplash.com/photo-1557821552-17105176677c?auto=format&fit=crop&w=800&q=80"
                     }
                     alt={project.projectTitle}
@@ -315,29 +379,95 @@ const ProjectsManager = () => {
                 />
               </div>
 
-              {/* Image URL with live preview */}
+              {/* Display Image Upload & URL */}
               <div>
-                <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider mb-1.5">
-                  Display Image URL
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-mono text-gray-400 uppercase tracking-wider">
+                    Project Display Image
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowUrlInput(!showUrlInput)}
+                    className="text-[11px] font-mono text-purple-400 hover:text-purple-300 flex items-center gap-1 transition-colors"
+                  >
+                    <LinkIcon className="w-3 h-3" />
+                    {showUrlInput ? "Hide Direct URL" : "Or enter direct URL"}
+                  </button>
+                </div>
+
+                {/* Hidden File Input */}
                 <input
-                  type="text"
-                  value={formData.displayImage}
+                  type="file"
+                  ref={fileInputRef}
                   onChange={(e) =>
-                    setFormData({ ...formData, displayImage: e.target.value })
+                    e.target.files?.[0] && handleImageFile(e.target.files[0])
                   }
-                  placeholder="https://images.unsplash.com/..."
-                  className="w-full px-3.5 py-2.5 bg-[#0B0F19] border border-gray-800 rounded-xl text-sm text-white focus:outline-none focus:border-purple-500 font-mono"
+                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                  className="hidden"
                 />
-                {formData.displayImage && (
-                  <div className="mt-2 h-24 w-full rounded-lg overflow-hidden border border-gray-800">
-                    <img
-                      src={formData.displayImage}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.target.style.display = "none";
-                      }}
+
+                {/* Drag & Drop Upload Card */}
+                <div
+                  onDragEnter={handleDrag}
+                  onDragOver={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`relative group rounded-xl border-2 border-dashed transition-all p-4 flex flex-col items-center justify-center text-center cursor-pointer min-h-[140px] overflow-hidden ${
+                    imageDragActive
+                      ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20"
+                      : "border-gray-800 bg-[#0B0F19]/50 hover:border-purple-500/50 hover:bg-[#0B0F19]"
+                  }`}
+                >
+                  {formData.displayImage ? (
+                    <div className="relative w-full h-32 rounded-lg overflow-hidden group/img">
+                      <img
+                        src={resolveAssetUrl(formData.displayImage)}
+                        alt="Project Preview"
+                        className="w-full h-full object-cover rounded-lg"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/img:opacity-100 transition-opacity flex flex-col items-center justify-center gap-1.5">
+                        <UploadCloud className="w-6 h-6 text-purple-400" />
+                        <span className="text-xs font-mono text-white">
+                          Click or drag to change image
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-2 py-2">
+                      <div className="w-10 h-10 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:scale-110 transition-transform">
+                        <UploadCloud className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium text-white">
+                          Click to browse or drag & drop image
+                        </p>
+                        <p className="text-[11px] text-gray-500 font-mono mt-0.5">
+                          PNG, JPG, WEBP (Max 2MB)
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Optional direct URL input */}
+                {showUrlInput && (
+                  <div className="mt-2.5">
+                    <input
+                      type="text"
+                      value={formData.displayImage}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          displayImageFile: null,
+                          displayImage: e.target.value,
+                        })
+                      }
+                      placeholder="Or paste image URL (https://...)"
+                      className="w-full px-3 py-2 bg-[#0B0F19] border border-gray-800 rounded-lg text-xs text-white focus:outline-none focus:border-purple-500 font-mono"
                     />
                   </div>
                 )}

@@ -1,36 +1,47 @@
+// src/controllers/uploadController.ts
 import type { Request, Response } from "express";
+import fs from "fs";
+import cloudinary from "../config/cloudinary.js";
 
-export const uploadFile = (req: Request, res: Response): void => {
+export const uploadImage = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
   try {
     if (!req.file) {
-      res.status(400).json({
-        success: false,
-        message: "No file was uploaded. Please provide a file.",
-      });
+      res.status(400).json({ success: false, message: "No file uploaded" });
       return;
     }
 
-    const host = req.get("host") || "localhost:4001";
-    const protocol = req.protocol || "http";
-    const filename = req.file.filename;
-    const fileUrl = `${protocol}://${host}/uploads/${filename}`;
-    const relativePath = `/uploads/${filename}`;
+    const localPath = req.file.path;
+
+    const result = await cloudinary.uploader.upload(localPath, {
+      folder: "portfolio_images",
+      resource_type: "image",
+    });
+
+    // Cleanup local file
+    if (fs.existsSync(localPath)) fs.unlinkSync(localPath);
 
     res.status(200).json({
       success: true,
       message: "File uploaded successfully",
-      url: fileUrl,
-      relativePath,
-      filename,
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
+      data: {
+        url: result.secure_url,
+        public_id: result.public_id,
+      },
     });
   } catch (error) {
-    console.error("Error in uploadFile controller:", error);
+    const err = error as Error;
+
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+
     res.status(500).json({
       success: false,
-      message: "Internal server error while processing uploaded file",
+      message: "Upload failed",
+      error: err.message,
     });
   }
 };

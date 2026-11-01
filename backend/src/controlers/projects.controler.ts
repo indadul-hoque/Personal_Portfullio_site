@@ -40,12 +40,34 @@ export const addProject = async (
       repoLink,
     } = req.body;
 
+    const finalDisplayImage = req.file
+      ? `/uploads/${req.file.filename}`
+      : displayImage;
+
+    let parsedFeatures = projectFeatures;
+    try {
+      parsedFeatures =
+        typeof projectFeatures === "string"
+          ? JSON.parse(projectFeatures)
+          : projectFeatures;
+    } catch {
+      parsedFeatures = [];
+    }
+
+    let parsedTechStack = techStack;
+    try {
+      parsedTechStack =
+        typeof techStack === "string" ? JSON.parse(techStack) : techStack;
+    } catch {
+      parsedTechStack = [];
+    }
+
     if (
       !projectTitle ||
       !projectDescription ||
-      !displayImage ||
-      !projectFeatures ||
-      !techStack ||
+      !finalDisplayImage ||
+      !parsedFeatures ||
+      !parsedTechStack ||
       !liveLink ||
       !repoLink
     ) {
@@ -59,9 +81,9 @@ export const addProject = async (
       data: {
         projectTitle,
         projectDescription,
-        displayImage,
-        projectFeatures,
-        techStack,
+        displayImage: finalDisplayImage,
+        projectFeatures: parsedFeatures,
+        techStack: parsedTechStack,
         liveLink,
         repoLink,
       },
@@ -73,9 +95,9 @@ export const addProject = async (
       message: "Project added successfully.",
     });
   } catch (error) {
-    console.log("Error fetching projects:", error);
+    console.log("Error adding project:", error);
     res.status(500).json({
-      message: "Internal server error",
+      message: error instanceof Error ? error.message : "Internal server error",
       success: false,
     });
   }
@@ -96,11 +118,62 @@ export const updateProject = async (
       return;
     }
 
+    const updateData: {
+      projectTitle?: string;
+      projectDescription?: string;
+      displayImage?: string;
+      projectFeatures?: string[];
+      techStack?: string[];
+      liveLink?: string;
+      repoLink?: string;
+    } = {};
+
+    if (req.body.projectTitle !== undefined) {
+      updateData.projectTitle = req.body.projectTitle;
+    }
+    if (req.body.projectDescription !== undefined) {
+      updateData.projectDescription = req.body.projectDescription;
+    }
+    if (req.body.liveLink !== undefined) {
+      updateData.liveLink = req.body.liveLink;
+    }
+    if (req.body.repoLink !== undefined) {
+      updateData.repoLink = req.body.repoLink;
+    }
+
+    if (req.file) {
+      updateData.displayImage = `/uploads/${req.file.filename}`;
+    } else if (req.body.displayImage !== undefined) {
+      updateData.displayImage = req.body.displayImage;
+    }
+
+    if (req.body.projectFeatures !== undefined) {
+      try {
+        updateData.projectFeatures =
+          typeof req.body.projectFeatures === "string"
+            ? JSON.parse(req.body.projectFeatures)
+            : req.body.projectFeatures;
+      } catch {
+        updateData.projectFeatures = [];
+      }
+    }
+
+    if (req.body.techStack !== undefined) {
+      try {
+        updateData.techStack =
+          typeof req.body.techStack === "string"
+            ? JSON.parse(req.body.techStack)
+            : req.body.techStack;
+      } catch {
+        updateData.techStack = [];
+      }
+    }
+
     const project = await prisma.projects.update({
       where: {
         id: id,
       },
-      data: req.body,
+      data: updateData,
     });
 
     res.status(200).json({
@@ -111,7 +184,7 @@ export const updateProject = async (
   } catch (error) {
     console.log("Error updating project:", error);
     res.status(500).json({
-      message: "Internal server error",
+      message: error instanceof Error ? error.message : "Internal server error",
       success: false,
     });
   }

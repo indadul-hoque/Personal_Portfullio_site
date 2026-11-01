@@ -11,19 +11,26 @@ import toast from "react-hot-toast";
 const DataContext = createContext(null);
 const STORAGE_KEY = "portfolio_shared_data";
 
-// Helper for clean, safe API requests
+// Helper for clean, safe API requests.
+// IMPORTANT: Do NOT set Content-Type header when sending FormData — the browser
+// sets it automatically with the correct multipart boundary.
 const api = async (path, method = "GET", body = null) => {
   try {
     const cleanPath = path.startsWith("/") ? path.slice(1) : path;
     const cleanBase = API_BASE_URL.endsWith("/")
       ? API_BASE_URL.slice(0, -1)
       : API_BASE_URL;
+
+    const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
     const options = {
       method,
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
+      // Do NOT set Content-Type for multipart/form-data — browser handles it
+      headers: isFormData ? {} : { "Content-Type": "application/json" },
     };
-    if (body) options.body = JSON.stringify(body);
+    if (body) {
+      options.body = isFormData ? body : JSON.stringify(body);
+    }
 
     const res = await fetch(`${cleanBase}/${cleanPath}`, options);
     const data = await res.json().catch(() => ({}));
@@ -201,18 +208,7 @@ const initialData = {
       readTime: "6 min read",
       createdAt: "2026-09-15T10:00:00.000Z",
       updatedAt: "2026-09-20T14:30:00.000Z",
-      content: `# Mastering Fullstack Architecture with MERN & TypeScript
-
-
-### Key Architectural Pillars:
-1. **Modular Routing**: Keep endpoints grouped by business domain.
-2. **Controller Decoupling**: Isolate business logic from HTTP transport layers.
-3. **Database Client Pooling**: Leverage Prisma with connection pooling.
-
-> *"Clean architecture is not about writing less code; it is about writing code that is straightforward to change."*
-
-Happy coding!
-`,
+      content: `# Mastering Fullstack Architecture with MERN & TypeScript\n\n### Key Architectural Pillars:\n1. **Modular Routing**: Keep endpoints grouped by business domain.\n2. **Controller Decoupling**: Isolate business logic from HTTP transport layers.\n3. **Database Client Pooling**: Leverage Prisma with connection pooling.\n\n> *"Clean architecture is not about writing less code; it is about writing code that is straightforward to change."*\n\nHappy coding!\n`,
     },
     {
       id: "blog-2",
@@ -227,22 +223,7 @@ Happy coding!
       readTime: "4 min read",
       createdAt: "2026-09-28T08:15:00.000Z",
       updatedAt: "2026-09-28T08:15:00.000Z",
-      content: `# Optimizing High Performance React Applications in 2026
-
-React applications scale rapidly, but without careful attention to rendering lifecycle, performance can degrade.
-
-## Core Best Practices
-
-- **Avoid premature memoization**: Profile first with React DevTools.
-- **Use \`useDeferredValue\` & \`useTransition\`** for non-blocking UI updates.
-- **Dynamic Imports**: Lazy load routes that aren't immediately critical.
-
-\`\`\`jsx
-const HeavyChart = React.lazy(() => import('./components/HeavyChart'));
-\`\`\`
-
-Stay tuned for part two!
-`,
+      content: `# Optimizing High Performance React Applications in 2026\n\nReact applications scale rapidly, but without careful attention to rendering lifecycle, performance can degrade.\n\n## Core Best Practices\n\n- **Avoid premature memoization**: Profile first with React DevTools.\n- **Use \`useDeferredValue\` & \`useTransition\`** for non-blocking UI updates.\n- **Dynamic Imports**: Lazy load routes that aren't immediately critical.\n\n\`\`\`jsx\nconst HeavyChart = React.lazy(() => import('./components/HeavyChart'));\n\`\`\`\n\nStay tuned for part two!\n`,
     },
   ],
   messages: [],
@@ -339,96 +320,122 @@ export const DataProvider = ({ children }) => {
   }, [refreshData]);
 
   // ===================== PROFILE =====================
+
+  // BUG 8: helper to detect local-only preview URLs that must never be sent to backend
+  const isLocalPreview = (url) =>
+    !!url && (url.startsWith("blob:") || url.startsWith("data:"));
+
   const updateProfile = async (profileData) => {
-    // Optimistic local update
+    // Optimistic local update (strip File objects before storing in state)
     setData((prev) => ({
       ...prev,
-      profile: { ...prev.profile, ...profileData },
+      profile: {
+        ...prev.profile,
+        ...profileData,
+        photoFile: undefined,
+        cvFile: undefined,
+      },
     }));
 
-    const payload = {
-      displayName: profileData.displayName,
-      email: profileData.email,
-      phone: profileData.phone,
-      address: profileData.address,
-      bio: profileData.bio,
-      socialLinks: profileData.socialLinks || [],
-      photoURL: profileData.photoURL,
-      cvURL: profileData.cvURL,
-      skills: profileData.skills || [],
-    };
+    const formData = new FormData();
+
+    // BUG 7: append ALL text fields including roleTitle
+    for (const field of ["displayName", "roleTitle", "email", "phone", "address", "bio"]) {
+      if (profileData[field] !== undefined) {
+        formData.append(field, profileData[field]);
+      }
+    }
+
+    formData.append("skills", JSON.stringify(profileData.skills || []));
+    formData.append("socialLinks", JSON.stringify(profileData.socialLinks || []));
+
+    // BUG 8: reject both blob: and data: URLs; never send both file + URL
+    if (profileData.photoFile instanceof File) {
+      formData.append("photo", profileData.photoFile);
+    } else if (profileData.photoURL && !isLocalPreview(profileData.photoURL)) {
+      formData.append("photoURL", profileData.photoURL);
+    }
+
+    if (profileData.cvFile instanceof File) {
+      formData.append("cv", profileData.cvFile);
+    } else if (profileData.cvURL && !isLocalPreview(profileData.cvURL)) {
+      formData.append("cvURL", profileData.cvURL);
+    }
 
     const targetId = profileData.id || data.profile?.id;
     const res = targetId
-      ? await api(`profile/${targetId}`, "PUT", payload)
-      : await api("profile", "POST", payload);
+      ? await api(`profile/${targetId}`, "PUT", formData)
+      : await api("profile", "POST", formData);
 
-    if (res.ok && res.data?.data) {
+    // BUG 11: always return { success, data } shape
+    const saved = res.data?.data ?? {};
+
+    if (res.ok) {
+      // BUG 9: preserve roleTitle even if server omits it
       setData((prev) => ({
         ...prev,
         profile: {
           ...prev.profile,
-          ...res.data.data,
-          ...(profileData.roleTitle
-            ? { roleTitle: profileData.roleTitle }
-            : {}),
+          ...saved,
+          roleTitle:
+            saved.roleTitle ??
+            profileData.roleTitle ??
+            prev.profile?.roleTitle,
         },
       }));
       toast.success("Profile updated successfully!");
-      return { success: true, data: res.data.data };
-    }
-
-    if (res.ok) {
-      toast.success("Profile updated successfully!");
-      return { success: true };
+      return { success: true, data: saved };
     } else {
       toast.error(res.data?.message || "Failed to update profile.");
       return { success: false, error: res.data?.message || res.error };
     }
   };
 
-  // ===================== FILE UPLOADS =====================
-  const uploadFile = async (file) => {
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const cleanBase = API_BASE_URL.endsWith("/")
-        ? API_BASE_URL.slice(0, -1)
-        : API_BASE_URL;
-      const res = await fetch(`${cleanBase}/upload`, {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) {
-        throw new Error(data?.message || "Failed to upload file to server.");
-      }
-      return { success: true, data };
-    } catch (err) {
-      return {
-        success: false,
-        error: err.message || "Failed to upload file from device.",
-      };
+  // BUG 10: uploadFile removed — it was unused and wired to a stale route
+
+  // Helper to build Project FormData
+  const buildProjectFormData = (project) => {
+    const formData = new FormData();
+    formData.append(
+      "projectTitle",
+      project.title || project.projectTitle || "",
+    );
+    formData.append(
+      "projectDescription",
+      project.description || project.projectDescription || "",
+    );
+    formData.append("liveLink", project.demoLink || project.liveLink || "");
+    formData.append("repoLink", project.codeLink || project.repoLink || "");
+    formData.append(
+      "projectFeatures",
+      JSON.stringify(project.features || project.projectFeatures || []),
+    );
+    formData.append(
+      "techStack",
+      JSON.stringify(project.technologies || project.techStack || []),
+    );
+
+    if (project.displayImageFile instanceof File) {
+      formData.append("displayImage", project.displayImageFile);
+    } else if (
+      (project.image || project.displayImage) &&
+      !(project.image || project.displayImage).startsWith("blob:")
+    ) {
+      formData.append("displayImage", project.image || project.displayImage);
+    } else if (!project.image && !project.displayImage) {
+      formData.append(
+        "displayImage",
+        "https://images.unsplash.com/photo-1557821552-17105176677c",
+      );
     }
+
+    return formData;
   };
 
   // ===================== PROJECTS =====================
   const addProject = async (project) => {
-    const payload = {
-      projectTitle: project.title || project.projectTitle,
-      projectDescription: project.description || project.projectDescription,
-      displayImage:
-        project.image ||
-        project.displayImage ||
-        "https://images.unsplash.com/photo-1557821552-17105176677c",
-      projectFeatures: project.features || project.projectFeatures || [],
-      techStack: project.technologies || project.techStack || [],
-      liveLink: project.demoLink || project.liveLink || "",
-      repoLink: project.codeLink || project.repoLink || "",
-    };
-
-    const res = await api("projects", "POST", payload);
+    const formData = buildProjectFormData(project);
+    const res = await api("projects", "POST", formData);
     const saved =
       res.ok && res.data?.data
         ? normalizeProject(res.data.data)
@@ -442,27 +449,26 @@ export const DataProvider = ({ children }) => {
     if (res.ok) {
       toast.success("Project added successfully!");
     } else {
-      toast.error(res.data?.message || "Failed to save project to server, added locally.");
+      toast.error(
+        res.data?.message || "Failed to save project to server, added locally.",
+      );
     }
     return saved;
   };
 
   const updateProject = async (id, updated) => {
-    const payload = {
-      projectTitle: updated.title || updated.projectTitle,
-      projectDescription: updated.description || updated.projectDescription,
-      displayImage: updated.image || updated.displayImage,
-      projectFeatures: updated.features || updated.projectFeatures,
-      techStack: updated.technologies || updated.techStack,
-      liveLink: updated.demoLink || updated.liveLink,
-      repoLink: updated.codeLink || updated.repoLink,
-    };
+    const formData = buildProjectFormData(updated);
+    const res = await api(`projects/${id}`, "PUT", formData);
 
-    const res = await api(`projects/${id}`, "PUT", payload);
+    const updatedData =
+      res.ok && res.data?.data
+        ? normalizeProject(res.data.data)
+        : normalizeProject({ ...updated, id });
+
     setData((prev) => ({
       ...prev,
       projects: prev.projects.map((p) =>
-        p.id === id ? normalizeProject({ ...p, ...updated }) : p,
+        p.id === id ? { ...p, ...updatedData } : p,
       ),
     }));
 
@@ -536,7 +542,9 @@ export const DataProvider = ({ children }) => {
     if (res.ok) {
       toast.success("Experience updated successfully!");
     } else {
-      toast.error(res.data?.message || "Failed to update experience on server.");
+      toast.error(
+        res.data?.message || "Failed to update experience on server.",
+      );
     }
   };
 
@@ -550,7 +558,9 @@ export const DataProvider = ({ children }) => {
     if (res.ok) {
       toast.success("Experience deleted successfully!");
     } else {
-      toast.error(res.data?.message || "Failed to delete experience on server.");
+      toast.error(
+        res.data?.message || "Failed to delete experience on server.",
+      );
     }
   };
 
@@ -712,12 +722,12 @@ export const DataProvider = ({ children }) => {
     toast.success("Settings reset to default!");
   };
 
+  // BUG 10: uploadFile removed from context value — it was unused
   const value = {
     ...data,
     profileLoading,
     refreshData,
     updateProfile,
-    uploadFile,
     addProject,
     updateProject,
     deleteProject,
